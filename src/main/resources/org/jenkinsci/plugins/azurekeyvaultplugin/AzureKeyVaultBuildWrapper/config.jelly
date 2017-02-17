@@ -1,0 +1,30 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:section title="Azure Key Vault Plugin">
+
+    <f:block>
+      <table>
+        <f:optionalBlock name="urlOverride" title="Override Azure Key Vault URL?">
+          <f:entry title="Azure Key Vault URL" field="keyVaultURL">
+            <f:textbox />
+          </f:entry>
+        </f:optionalBlock>
+        <f:optionalBlock name="idOverride" title="Override Application ID?">
+          <f:entry title="Application ID" field="applicationID">
+            <f:textbox />
+          </f:entry>
+        </f:optionalBlock>
+            <f:optionalBlock name="tokenOverride" title="Override Application Token?">
+          <f:entry title="Application Token" field="applicationToken">
+            <f:password />
+          </f:entry>
+        </f:optionalBlock>
+      </table>
+    </f:block>
+
+    <f:entry>
+      <f:repeatableProperty field="keyVaultSecrets" minimum="1" maximum="1" header="Azure Key Vault Secret" add="Add a Key Vault secret"></f:repeatableProperty>
+    </f:entry>
+
+  </f:section>
+</j:jelly>

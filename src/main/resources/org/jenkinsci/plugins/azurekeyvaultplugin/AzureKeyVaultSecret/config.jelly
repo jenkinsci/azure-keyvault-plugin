@@ -1,0 +1,21 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  
+    <!--<f:entry title="Secret Type" field="secretType">
+        <f:select name="secretType">
+            <option value="secret">Secret</option>
+            <option value="certificate">Certificate</option>
+        </f:select>
+    </f:entry>-->
+  
+    <f:entry>
+        <f:repeatableProperty field="secretValues" minimum="1" add="Add a key/value pair"></f:repeatableProperty>
+    </f:entry>
+  
+    <!--<f:entry title="">
+      <div align="right">
+        <f:repeatableDeleteButton />
+      </div>
+    </f:entry>-->
+  
+</j:jelly>

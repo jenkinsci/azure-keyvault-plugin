@@ -1,0 +1,28 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">  
+
+    <f:entry title="Secret Type" field="secretType">
+        <select name="secretType">
+            <option value="secret">Secret</option>
+            <option value="certificate">Certificate</option>
+        </select>
+    </f:entry>
+    
+    <f:entry title="Name" field="name">
+        <f:textbox />
+    </f:entry>
+  
+    <f:entry title="Version" field="version">
+        <f:textbox />
+    </f:entry>
+    
+    <f:entry title="Environment Variable" field="envVariable">
+        <f:textbox />
+    </f:entry>
+  
+    <f:entry title="">
+        <div align="right">
+            <f:repeatableDeleteButton />
+        </div>
+    </f:entry>
+</j:jelly>
