@@ -10,21 +10,14 @@ import hudson.model.Descriptor;
 
 public class AzureKeyVaultSecret extends AbstractDescribableImpl<AzureKeyVaultSecret>
 {
-    private String path;
     private List<AzureKeyVaultSecretValue> secretValues;
     
     @DataBoundConstructor
     public AzureKeyVaultSecret(String path, List<AzureKeyVaultSecretValue> secretValues)
     {
-        this.path = path;
         this.secretValues = secretValues;
     }
-    
-    public String getPath()
-    {
-        return path;
-    }
-    
+        
     public List<AzureKeyVaultSecretValue> getSecretValues()
     {
         return secretValues;

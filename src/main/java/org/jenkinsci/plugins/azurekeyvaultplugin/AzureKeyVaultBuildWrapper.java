@@ -14,6 +14,7 @@ import javax.annotation.CheckForNull;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Sample {@link Builder}.
@@ -36,11 +37,23 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     private String keyVaultURL;
     private String applicationID;
     private Secret applicationToken;
-    private List<AzureKeyVaultSecret> keyVaultSecrets;
+    private List<AzureKeyVaultSecretValue> azureKeyVaultSecretValues;
 
     @DataBoundConstructor
-    public AzureKeyVaultBuildWrapper(@CheckForNull List<AzureKeyVaultSecret> secrets) {
-        keyVaultSecrets = secrets;
+    public AzureKeyVaultBuildWrapper(@CheckForNull List<AzureKeyVaultSecretValue> azureKeyVaultSecretValues) {
+        
+        if (azureKeyVaultSecretValues == null)
+        {
+            System.out.println("Constructed AzureKeyVaultBuildWrapper with NULL");
+            // throw new NullPointerException("Provided secret list is NULL");
+            this.azureKeyVaultSecretValues = new ArrayList<AzureKeyVaultSecretValue>();
+            this.azureKeyVaultSecretValues.add(secret);
+        }
+        else
+        {
+            System.out.format("Constructed AzureKeyVaultBuildWrapper with %d secrets %n", azureKeyVaultSecretValues.size());
+            this.azureKeyVaultSecretValues = azureKeyVaultSecretValues;
+        }
     }
 
     @DataBoundSetter
@@ -70,8 +83,17 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         return applicationToken;
     }
     
-    public List<AzureKeyVaultSecret> getKeyVaultSecrets() {
-        return keyVaultSecrets;
+    public List<AzureKeyVaultSecretValue> getAzureKeyVaultSecretValues() {
+        if (azureKeyVaultSecretValues == null)
+        {
+            azureKeyVaultSecretValues = new ArrayList<AzureKeyVaultSecretValue>();
+            System.out.println("Attempt to GetList that is NULL");
+        }
+        else
+        {
+            System.out.format("GetList %d %n", azureKeyVaultSecretValues.size());
+        }
+        return azureKeyVaultSecretValues;
     }
     
     // Overridden for better type safety.
@@ -121,16 +143,28 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             return true;
         }
 
-        public String GetKeyVaultURL() {
+        public String getKeyVaultURL() {
             return keyVaultURL;
         }
-
-        public String GetApplicationID() {
-            return applicationID;
+        
+        public void setKeyVaultUrl(String url) {
+            keyVaultURL = url;
         }
 
-        public Secret GetApplicationSecret() {
+        public String getApplicationID() {
+            return applicationID;
+        }
+        
+        public void setApplicationID(String id) {
+            applicationID = id;
+        }
+
+        public Secret getApplicationSecret() {
             return applicationSecret;
+        }
+        
+        public void setApplicationSecret(String secret) {
+            applicationSecret = Secret.fromString(secret);
         }
 
         /**
