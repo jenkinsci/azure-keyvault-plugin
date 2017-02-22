@@ -30,8 +30,8 @@ import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 
-public class AzureKeyVaultSecretValue extends 
-    AbstractDescribableImpl<AzureKeyVaultSecretValue>
+public class AzureKeyVaultSecret extends 
+    AbstractDescribableImpl<AzureKeyVaultSecret>
 {
     private String secretType;
     private String name;
@@ -39,7 +39,7 @@ public class AzureKeyVaultSecretValue extends
     private String envVariable;
 
     @DataBoundConstructor
-    public AzureKeyVaultSecretValue(String _secretType, String _name,
+    public AzureKeyVaultSecret(String _secretType, String _name,
         String _version, String _envVariable)
     {
         secretType = _secretType;
@@ -93,7 +93,7 @@ public class AzureKeyVaultSecretValue extends
     }
     
     @Extension
-    public static final class DescriptorImpl extends Descriptor<AzureKeyVaultSecretValue>
+    public static final class DescriptorImpl extends Descriptor<AzureKeyVaultSecret>
     {
         @Override
         public String getDisplayName()

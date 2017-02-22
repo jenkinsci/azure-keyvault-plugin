@@ -23,7 +23,7 @@
     </f:block>
 
     <f:entry>
-      <f:repeatableProperty field="azureKeyVaultSecretValues" minimum="1" maximum="1" header="Azure Key Vault Secret" add="Add a Key Vault secret"></f:repeatableProperty>
+      <f:repeatableProperty field="azureKeyVaultSecrets" minimum="1" maximum="1" header="Azure Key Vault Secret" add="Add a Key Vault secret"></f:repeatableProperty>
     </f:entry>
 
   </f:section>

@@ -61,23 +61,11 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     private String keyVaultURL;
     private String applicationID;
     private Secret applicationToken;
-    private List<AzureKeyVaultSecretValue> azureKeyVaultSecretValues;
+    private List<AzureKeyVaultSecret> azureKeyVaultSecrets;
 
     @DataBoundConstructor
-    public AzureKeyVaultBuildWrapper(@CheckForNull List<AzureKeyVaultSecretValue> azureKeyVaultSecretValues) {
-        
-        if (azureKeyVaultSecretValues == null)
-        {
-            System.out.println("Constructed AzureKeyVaultBuildWrapper with NULL");
-            // throw new NullPointerException("Provided secret list is NULL");
-            this.azureKeyVaultSecretValues = new ArrayList<AzureKeyVaultSecretValue>();
-            this.azureKeyVaultSecretValues.add(secret);
-        }
-        else
-        {
-            System.out.format("Constructed AzureKeyVaultBuildWrapper with %d secrets %n", azureKeyVaultSecretValues.size());
-            this.azureKeyVaultSecretValues = azureKeyVaultSecretValues;
-        }
+    public AzureKeyVaultBuildWrapper(@CheckForNull List<AzureKeyVaultSecret> azureKeyVaultSecrets) {
+        this.azureKeyVaultSecrets = azureKeyVaultSecrets;
     }
 
     @DataBoundSetter
@@ -107,17 +95,8 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         return applicationToken;
     }
     
-    public List<AzureKeyVaultSecretValue> getAzureKeyVaultSecretValues() {
-        if (azureKeyVaultSecretValues == null)
-        {
-            azureKeyVaultSecretValues = new ArrayList<AzureKeyVaultSecretValue>();
-            System.out.println("Attempt to GetList that is NULL");
-        }
-        else
-        {
-            System.out.format("GetList %d %n", azureKeyVaultSecretValues.size());
-        }
-        return azureKeyVaultSecretValues;
+    public List<AzureKeyVaultSecret> getAzureKeyVaultSecrets() {
+        return azureKeyVaultSecrets;
     }
     
     // Overridden for better type safety.
@@ -130,6 +109,9 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     public void setUp(Context context, Run<?, ?> build, FilePath workspace,
       Launcher launcher, TaskListener listener, EnvVars initialEnvironment) {
+          for (AzureKeyVaultSecret secret : azureKeyVaultSecrets) {
+              context.env(secret.getEnvVariable(), secret.getName());
+          }
     }
 
     /**
