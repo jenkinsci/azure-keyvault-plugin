@@ -1,13 +1,13 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <f:section title="Azure Key Vault Plugin">
-    <f:entry title="Key Vault URL" field="KeyVaultURL">
+    <f:entry title="Key Vault URL" field="keyVaultURL">
       <f:textbox />
     </f:entry>
-    <f:entry title="Application ID" field="ApplicationID">
+    <f:entry title="Application ID" field="applicationID">
       <f:textbox />
     </f:entry>
-    <f:entry title="Application Secret" field="ApplicationSecret">
+    <f:entry title="Application Secret" field="applicationSecret">
       <f:password />
     </f:entry>
   </f:section>

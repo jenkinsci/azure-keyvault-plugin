@@ -23,6 +23,11 @@
  */
  
 package org.jenkinsci.plugins.azurekeyvaultplugin;
+
+import com.microsoft.azure.credentials.*;
+import com.microsoft.azure.keyvault.KeyVaultClient;
+import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
+import com.microsoft.azure.keyvault.models.SecretBundle;
 import hudson.*;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
@@ -35,10 +40,8 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.CheckForNull;
-import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.List;
-import java.util.ArrayList;
 
 /**
  * Sample {@link Builder}.
@@ -58,41 +61,23 @@ import java.util.ArrayList;
  */
 public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
-    private String keyVaultURL;
-    private String applicationID;
-    private Secret applicationToken;
     private List<AzureKeyVaultSecret> azureKeyVaultSecrets;
 
     @DataBoundConstructor
     public AzureKeyVaultBuildWrapper(@CheckForNull List<AzureKeyVaultSecret> azureKeyVaultSecrets) {
         this.azureKeyVaultSecrets = azureKeyVaultSecrets;
     }
-
-    @DataBoundSetter
-    public void setKeyVaultURL(String url) {
-        keyVaultURL = url;
-    }
     
     public String getKeyVaultURL() {
-        return keyVaultURL;
+        return getDescriptor().getKeyVaultURL();
     }
-    
-    @DataBoundSetter
-    public void setApplicationID(String id) {
-        applicationID = id;
-    }
-    
+       
     public String getApplicationID() {
-        return applicationID;
+       return getDescriptor().getApplicationID();
     }
-    
-    @DataBoundSetter
-    public void setApplicationToken(Secret token) {
-        applicationToken = token;
-    }
-    
-    public Secret getApplicationToken() {
-        return applicationToken;
+        
+    public Secret getApplicationSecret() {
+        return getDescriptor().getApplicationSecret();
     }
     
     public List<AzureKeyVaultSecret> getAzureKeyVaultSecrets() {
@@ -109,8 +94,26 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     public void setUp(Context context, Run<?, ?> build, FilePath workspace,
       Launcher launcher, TaskListener listener, EnvVars initialEnvironment) {
+          String applicationID = getApplicationID();
+          Secret applicationSecret = getApplicationSecret();
+          if (applicationID == null) {
+              throw new NullPointerException("applicationID");
+          } 
+          if (applicationSecret == null) {
+              throw new NullPointerException("applicationSecret");
+          } 
+
+          KeyVaultCredentials creds = new AzureKeyVaultCredential(applicationID, applicationSecret.toString());
+          KeyVaultClient client = new KeyVaultClient(creds);
+
           for (AzureKeyVaultSecret secret : azureKeyVaultSecrets) {
-              context.env(secret.getEnvVariable(), secret.getName());
+              String secretIdentifier = getKeyVaultURL() + secret.getSecretType() + "/" + secret.getName() + "/" + secret.getVersion();
+              try {
+                SecretBundle bundle = client.getSecret(secretIdentifier);
+                context.env(secret.getEnvVariable(), bundle.value());
+              } catch (IOException e) {
+                  e.printStackTrace();
+              }
           }
     }
 
@@ -143,7 +146,6 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             load();
         }
 
-        // public boolean isApplicable(Class<? extends AbstractProject> aClass) {
         public boolean isApplicable(AbstractProject<?, ? > item) {
             // Indicates that this builder can be used with all kinds of project types 
             return true;
@@ -153,24 +155,24 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             return keyVaultURL;
         }
         
-        public void setKeyVaultUrl(String url) {
-            keyVaultURL = url;
+        public void setKeyVaultUrl(String keyVaultURL) {
+            this.keyVaultURL = keyVaultURL;
         }
 
         public String getApplicationID() {
             return applicationID;
         }
         
-        public void setApplicationID(String id) {
-            applicationID = id;
+        public void setApplicationID(String applicationID) {
+            this.applicationID = applicationID;
         }
 
         public Secret getApplicationSecret() {
             return applicationSecret;
         }
         
-        public void setApplicationSecret(String secret) {
-            applicationSecret = Secret.fromString(secret);
+        public void setApplicationSecret(String applicationSecret) {
+            this.applicationSecret = Secret.fromString(applicationSecret);
         }
 
         /**
@@ -182,9 +184,9 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            keyVaultURL = formData.getString("KeyVaultURL");
-            applicationID = formData.getString("ApplicationID");
-            applicationSecret = Secret.fromString(formData.getString("ApplicationSecret"));
+            this.keyVaultURL = formData.getString("keyVaultURL");
+            this.applicationID = formData.getString("applicationID");
+            this.applicationSecret = Secret.fromString(formData.getString("applicationSecret"));
             save();
             return super.configure(req,formData);
         }
