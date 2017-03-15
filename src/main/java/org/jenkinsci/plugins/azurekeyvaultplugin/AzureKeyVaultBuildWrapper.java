@@ -39,9 +39,19 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.annotation.CheckForNull;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.cert.Certificate;
+import java.security.Key;
+import java.security.KeyStore;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+import javax.annotation.CheckForNull;
+import javax.xml.bind.DatatypeConverter;
 
 /**
  * Sample {@link Builder}.
@@ -62,6 +72,8 @@ import java.util.List;
 public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     private List<AzureKeyVaultSecret> azureKeyVaultSecrets;
+    private char[] emptyCharArray = new char[0];
+    private static final Logger LOGGER = Logger.getLogger(AzureKeyVaultBuildWrapper.class.getName());
 
     @DataBoundConstructor
     public AzureKeyVaultBuildWrapper(@CheckForNull List<AzureKeyVaultSecret> azureKeyVaultSecrets) {
@@ -92,29 +104,76 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         return (DescriptorImpl)super.getDescriptor();
     }
 
+    private SecretBundle getSecret(KeyVaultClient client, AzureKeyVaultSecret secret) {
+        try {
+            SecretBundle bundle = client.getSecret(getKeyVaultURL(), secret.getName(), secret.getVersion());
+            return bundle;
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, e.toString(), e);
+        }
+        return null;
+    }
+        
     public void setUp(Context context, Run<?, ?> build, FilePath workspace,
       Launcher launcher, TaskListener listener, EnvVars initialEnvironment) {
-          String applicationID = getApplicationID();
-          Secret applicationSecret = getApplicationSecret();
-          if (applicationID == null) {
-              throw new NullPointerException("applicationID");
-          } 
-          if (applicationSecret == null) {
-              throw new NullPointerException("applicationSecret");
-          } 
+        System.out.println("Setting up the extension");
+        String applicationID = getApplicationID();
+        Secret applicationSecret = getApplicationSecret();
+        
+        if (applicationID == null) {
+            throw new NullPointerException("applicationID");
+        } 
+        if (applicationSecret == null) {
+            throw new NullPointerException("applicationSecret");
+        } 
+            
+        KeyVaultCredentials creds = new AzureKeyVaultCredential(applicationID, applicationSecret.toString());
+        KeyVaultClient client = new KeyVaultClient(creds);
 
-          KeyVaultCredentials creds = new AzureKeyVaultCredential(applicationID, applicationSecret.toString());
-          KeyVaultClient client = new KeyVaultClient(creds);
-
-          for (AzureKeyVaultSecret secret : azureKeyVaultSecrets) {
-              String secretIdentifier = getKeyVaultURL() + secret.getSecretType() + "/" + secret.getName() + "/" + secret.getVersion();
-              try {
-                SecretBundle bundle = client.getSecret(secretIdentifier);
-                context.env(secret.getEnvVariable(), bundle.value());
-              } catch (IOException e) {
-                  e.printStackTrace();
-              }
-          }
+        for (AzureKeyVaultSecret secret : azureKeyVaultSecrets) {
+            if (secret.isPassword()) {
+                SecretBundle bundle = getSecret(client, secret);
+                if (bundle != null) {
+                    context.env(secret.getEnvVariable(), bundle.value());
+                }
+            } else if (secret.isCertificate()) {
+                // Get Certificate from Keyvault as a Secret
+                SecretBundle bundle = getSecret(client, secret);
+                if (bundle == null) {
+                    continue;
+                }
+                try {
+                    // Base64 decode the result and use a keystore to parse the key/cert
+                    byte[] bytes = DatatypeConverter.parseBase64Binary(bundle.value());
+                    KeyStore ks = KeyStore.getInstance("PKCS12");
+                    ks.load(new ByteArrayInputStream(bytes), emptyCharArray);
+                    
+                    // Extract the key(s) and cert(s) and save them in a *second* keystore
+                    // because the first keystore yields a corrupted PFX when written to disk
+                    KeyStore ks2 = KeyStore.getInstance("PKCS12");
+                    ks2.load(null, null);
+                    
+                    for (Enumeration<String> e = ks.aliases(); e.hasMoreElements();)
+                    {
+                        String alias = e.nextElement();
+                        Key privateKey = ks.getKey(alias, emptyCharArray);
+                        Certificate[] chain = ks.getCertificateChain(alias);
+                        ks2.setKeyEntry(alias, privateKey, emptyCharArray, chain);
+                        System.out.println("Cert alias: " + alias);
+                    }
+                    
+                    // Write PFX to disk
+                    File outFile = File.createTempFile("keyvault", "pfx");
+                    FileOutputStream outFileStream = new FileOutputStream(outFile.getPath());
+                    ks.store(outFileStream, emptyCharArray);
+                    outFileStream.close();
+                    context.env(secret.getEnvVariable(), outFile.getPath());
+                    
+                } catch (Exception e) {
+                    LOGGER.log(Level.SEVERE, e.toString(), e    );
+                }
+            }
+        }
     }
 
     /**

@@ -1,11 +1,8 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">  
 
-    <f:entry title="Secret Type" field="secretType">
-        <select name="secretType">
-            <option value="secrets">Secret</option>
-            <option value="certificates">Certificate</option>
-        </select>
+    <f:entry field="secretType" title="Secret Type">
+        <f:select />
     </f:entry>
     
     <f:entry title="Name" field="name">
