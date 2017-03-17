@@ -64,7 +64,9 @@ public class AzureKeyVaultCredential extends KeyVaultCredentials
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
-            service.shutdown();
+            if (service != null) {
+                service.shutdown();
+            }
         }
 
         if (result == null) {

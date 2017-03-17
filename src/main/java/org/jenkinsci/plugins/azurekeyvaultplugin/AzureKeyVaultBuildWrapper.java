@@ -41,8 +41,9 @@ import org.kohsuke.stapler.QueryParameter;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
 import java.security.cert.Certificate;
 import java.security.Key;
 import java.security.KeyStore;
@@ -72,8 +73,8 @@ import javax.xml.bind.DatatypeConverter;
 public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     private List<AzureKeyVaultSecret> azureKeyVaultSecrets;
-    private char[] emptyCharArray = new char[0];
-    private static final Logger LOGGER = Logger.getLogger(AzureKeyVaultBuildWrapper.class.getName());
+    private static char[] emptyCharArray = new char[0];
+    private static final Logger LOGGER = Logger.getLogger("Jenkins.AzureKeyVaultBuildWrapper");
 
     @DataBoundConstructor
     public AzureKeyVaultBuildWrapper(@CheckForNull List<AzureKeyVaultSecret> azureKeyVaultSecrets) {
@@ -108,7 +109,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         try {
             SecretBundle bundle = client.getSecret(getKeyVaultURL(), secret.getName(), secret.getVersion());
             return bundle;
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOGGER.log(Level.SEVERE, e.toString(), e);
         }
         return null;
@@ -116,7 +117,6 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         
     public void setUp(Context context, Run<?, ?> build, FilePath workspace,
       Launcher launcher, TaskListener listener, EnvVars initialEnvironment) {
-        System.out.println("Setting up the extension");
         String applicationID = getApplicationID();
         Secret applicationSecret = getApplicationSecret();
         
@@ -156,26 +156,26 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
                     for (Enumeration<String> e = ks.aliases(); e.hasMoreElements();)
                     {
                         String alias = e.nextElement();
-                        Key privateKey = ks.getKey(alias, emptyCharArray);
                         Certificate[] chain = ks.getCertificateChain(alias);
+                        Key privateKey = ks.getKey(alias, emptyCharArray);
                         ks2.setKeyEntry(alias, privateKey, emptyCharArray, chain);
-                        System.out.println("Cert alias: " + alias);
                     }
                     
-                    // Write PFX to disk
-                    File outFile = File.createTempFile("keyvault", "pfx");
-                    FileOutputStream outFileStream = new FileOutputStream(outFile.getPath());
-                    ks.store(outFileStream, emptyCharArray);
+                    // Write PFX to disk on executor, which may be a separate physical system
+                    FilePath outFile = workspace.createTempFile("keyvault", "pfx");
+                    OutputStream outFileStream = outFile.write();
+                    ks2.store(outFileStream, emptyCharArray);
                     outFileStream.close();
-                    context.env(secret.getEnvVariable(), outFile.getPath());
+                    URI uri = outFile.toURI();
+                    context.env(secret.getEnvVariable(), uri.getPath());
                     
                 } catch (Exception e) {
-                    LOGGER.log(Level.SEVERE, e.toString(), e    );
+                    LOGGER.log(Level.SEVERE, e.toString(), e);
                 }
             }
         }
     }
-
+    
     /**
      * Descriptor for {@link AzureKeyVaultBuildWrapper}. Used as a singleton.
      * The class is marked as public so that it can be accessed from views.
