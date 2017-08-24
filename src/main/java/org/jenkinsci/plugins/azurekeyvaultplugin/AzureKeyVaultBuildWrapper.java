@@ -75,22 +75,68 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     private List<AzureKeyVaultSecret> azureKeyVaultSecrets;
     private static char[] emptyCharArray = new char[0];
     private static final Logger LOGGER = Logger.getLogger("Jenkins.AzureKeyVaultBuildWrapper");
-
+    
+    // Instances for this particulalr build job, 
+    // so they can override the global settings
+    private String keyVaultURL;
+    private String applicationID;
+    private Secret applicationSecret;
+    
     @DataBoundConstructor
     public AzureKeyVaultBuildWrapper(@CheckForNull List<AzureKeyVaultSecret> azureKeyVaultSecrets) {
         this.azureKeyVaultSecrets = azureKeyVaultSecrets;
     }
     
+    // Override KeyVault URL
+    public String getKeyVaultURLOverride() {
+        return this.keyVaultURL;
+    }
+    
+    @DataBoundSetter
+    public void setKeyVaultURLOverride(String keyVaultURL) {
+        this.keyVaultURL = keyVaultURL;
+    }
+    
+    // Override KeyVault Application ID
+    public String getApplicationIDOverride() {
+        return this.applicationID;
+    }
+    
+    @DataBoundSetter
+    public void setApplicationIDOverride(String applicationID) {
+        this.applicationID = applicationID;
+    }
+    
+    // Override Application Secret
+    public Secret getApplicationSecretOverride() {
+        return this.applicationSecret;
+    }
+    
+    @DataBoundSetter
+    public void setApplicationSecretOverride(Secret applicationSecret) {
+        this.applicationSecret = applicationSecret;
+    }
+    
+    // Get the default value only if it is not overridden for this build
     public String getKeyVaultURL() {
-        return getDescriptor().getKeyVaultURL();
+        if (this.keyVaultURL == null || this.keyVaultURL.isEmpty()) {
+            return getDescriptor().getKeyVaultURL();
+        }
+        return this.keyVaultURL;
     }
        
     public String getApplicationID() {
-       return getDescriptor().getApplicationID();
+        if (this.applicationID == null || this.applicationID.isEmpty()) {
+            return getDescriptor().getApplicationID();
+        }
+        return this.applicationID;
     }
         
     public Secret getApplicationSecret() {
-        return getDescriptor().getApplicationSecret();
+        if (this.applicationSecret == null || this.applicationSecret.toString().isEmpty()) {
+            return getDescriptor().getApplicationSecret();
+        }
+        return this.applicationSecret;
     }
     
     public List<AzureKeyVaultSecret> getAzureKeyVaultSecrets() {

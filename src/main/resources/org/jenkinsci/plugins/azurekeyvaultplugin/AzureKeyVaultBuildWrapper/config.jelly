@@ -4,21 +4,15 @@
 
     <f:block>
       <table>
-        <f:optionalBlock name="urlOverride" title="Override Azure Key Vault URL?">
-          <f:entry title="Azure Key Vault URL" field="keyVaultURL">
-            <f:textbox />
-          </f:entry>
-        </f:optionalBlock>
-        <f:optionalBlock name="idOverride" title="Override Application ID?">
-          <f:entry title="Application ID" field="applicationID">
-            <f:textbox />
-          </f:entry>
-        </f:optionalBlock>
-        <f:optionalBlock name="secretOverride" title="Override Application Secret?">
-          <f:entry title="Application Token" field="applicationSecret">
-            <f:password />
-          </f:entry>
-        </f:optionalBlock>
+        <f:entry title="Override Key Vault URL" field="keyVaultURLOverride">
+          <f:textbox />
+        </f:entry>
+        <f:entry title="Override Application ID" field="applicationIDOverride">
+          <f:textbox />
+        </f:entry>
+        <f:entry title="Override Application Secret" field="applicationSecretOverride">
+          <f:password />
+        </f:entry>
       </table>
     </f:block>
 
