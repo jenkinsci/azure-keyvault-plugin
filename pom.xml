@@ -11,7 +11,7 @@
   </parent>
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>azure-keyvault</artifactId>
-  <version>0.9.2</version>
+  <version>0.9.3</version>
   <packaging>hpi</packaging>
 
   <properties>

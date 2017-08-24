@@ -19,3 +19,5 @@ In each build job that will use the plugin, configure the following in the **Azu
   * For **Certificates**, the variable will hold the path to the certificate file on disk
 * _(Optional)_ Override the **Key Vault URL, Application ID, or Application Secret**. This is useful if different vaults are used by different jobs.
 
+## Building the Plugin
+* Run **mvn install**, a .hpi file will be generted in the target folder.
