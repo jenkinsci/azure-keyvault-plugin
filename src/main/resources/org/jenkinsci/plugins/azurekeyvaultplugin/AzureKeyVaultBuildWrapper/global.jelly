@@ -10,5 +10,8 @@
     <f:entry title="Application Secret" field="applicationSecret">
       <f:password />
     </f:entry>
+    <f:entry title="Credential ID" field="credentialID">
+      <f:textbox />
+    </f:entry>
   </f:section>
 </j:jelly>

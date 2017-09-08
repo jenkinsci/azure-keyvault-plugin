@@ -33,21 +33,57 @@ import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import hudson.util.Secret;
 
 public class AzureKeyVaultCredential extends KeyVaultCredentials
 {
     private String applicationID;
-    private String applicationSecret;
-  
-    public AzureKeyVaultCredential(String applicationID, String applicationSecret)
+    private Secret applicationSecret;
+    
+    public AzureKeyVaultCredential()
+    {
+        
+    }
+    
+    public AzureKeyVaultCredential(String applicationID, Secret applicationSecret)
     {
         this.applicationID = applicationID;
         this.applicationSecret = applicationSecret;
     }
+    
+    public void setApplicationID(String applicationID)
+    {
+        this.applicationID = applicationID;
+    }
+    
+    public void setApplicationSecret(String applicationSecret)
+    {
+        this.applicationSecret = Secret.fromString(applicationSecret);
+    }
+    
+    public void setApplicationSecret(Secret applicationSecret)
+    {
+        this.applicationSecret = applicationSecret;
+    }
+    
+    public boolean isApplicationIDValid()
+    {
+        return !AzureKeyVaultUtil.isNullOrEmpty(applicationID);
+    }
+    
+    public boolean isApplicationSecretValid()
+    {
+        return !AzureKeyVaultUtil.isNullOrEmpty(applicationSecret);
+    }
+    
+    public boolean isValid()
+    {
+        return isApplicationIDValid() && isApplicationSecretValid();
+    }
 
     @Override
     public String doAuthenticate(String authorization, String resource, String scope) {
-        AuthenticationResult token = getAccessTokenFromClientCredentials(authorization, resource, applicationID, applicationSecret);
+        AuthenticationResult token = getAccessTokenFromClientCredentials(authorization, resource, applicationID, applicationSecret.toString());
         return token.getAccessToken();
     }
 

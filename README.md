@@ -7,7 +7,10 @@ The plugin acts as an Azure Active Directory Application and must be configured 
 In the Jenkins **Configure System** page, configure the following three options in the **Azure Key Vault Plugin** section
 * **Key Vault URL** - The url where your keyvault resides (e.g. `https://myvault.vault.azure.net/`)
 * **Application ID** - An application ID that is permitted to access the serets in your keyvault. ([More details](https://docs.microsoft.com/en-us/azure/app-service-mobile/app-service-mobile-how-to-configure-active-directory-authentication#optional-configure-a-native-client-application))
-* **Application Secret** - A secret/token that is associated with your Azure AD application.
+* **Application Secret** - A secret/token that is associated with your Azure AD application. **This wil be deprecated in version 1.0**
+* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Both **Secret Text** and **Username/Password** types are supported
+  * If the credential is **Secret Text** then the Application ID field **must** also be filled in.
+  * If the credential is **Username/Password** then the Application ID field can be left blank. The Application ID and Application Secret are retrieved from the Username and Password fields of the specified credential.
 
 ## Job Configuration
 In each build job that will use the plugin, configure the following in the **Azure Key Vault Plugin** section

@@ -13,6 +13,9 @@
         <f:entry title="Override Application Secret" field="applicationSecretOverride">
           <f:password />
         </f:entry>
+        <f:entry title="Override Credential ID" field="credentialIDOverride">
+          <f:textbox />
+        </f:entry>
       </table>
     </f:block>
 
