@@ -24,3 +24,23 @@ In each build job that will use the plugin, configure the following in the **Azu
 
 ## Building the Plugin
 * Run **mvn install**, a .hpi file will be generted in the target folder.
+
+# Plugin Usage
+### Usage in Jenkinsfile
+```groovy
+node {
+    def secrets = [
+        [ $class: 'AzureKeyVaultSecret', _secretType: 'Certificate', _name: 'MyCert00', _version: '', _envVariable: 'AzureKeyVault' ]
+    ]
+
+    wrap([$class: 'AzureKeyVaultBuildWrapper',
+        azureKeyVaultSecrets: secrets,
+        keyVaultURLOverride: 'https://mykeyvault.vault.azure.net',
+        applicationIDOverride: '',
+        applicationSecretOverride: null,
+        credentialIDOverride: 'SPN_KEY_VAULT'
+    ]) {
+        sh 'echo $AzureKeyVault'
+    }
+}
+```
