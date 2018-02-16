@@ -31,6 +31,7 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.microsoft.azure.keyvault.KeyVaultClient;
 import com.microsoft.azure.keyvault.models.SecretBundle;
+import com.microsoft.azure.util.AzureCredentials;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -235,9 +236,20 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             credential.setApplicationSecret(StandardUsernamePasswordCredentials.class.cast(cred).getPassword());
             return credential;
         }
+        else if (AzureCredentials.class.isInstance(cred)) {
+            LOGGER.log(Level.INFO, String.format("Fetched %s as AzureCredentials", credentialID));
+            CredentialsProvider.track(build, cred);
+            AzureCredentials azureCredentials = (AzureCredentials) cred;
+
+            credential.setApplicationID(azureCredentials.getClientId());
+            credential.setApplicationSecret(azureCredentials.getPlainClientSecret());
+            return credential;
+        }
         else
         {
-            throw new CredentialException("Could not determine the type for Secret id " + credentialID + " only 'Secret Text' and 'Username/Password' are supported");
+            throw new CredentialException("Could not determine the type for Secret id "
+                    + credentialID +
+                    " only 'Secret Text', 'Username/Password', and 'Microsoft Azure Service Principal' are supported");
         }
     }
     
