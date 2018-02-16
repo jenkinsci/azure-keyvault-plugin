@@ -28,12 +28,16 @@
 
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
-import com.microsoft.aad.adal4j.*;
+import com.microsoft.aad.adal4j.AuthenticationContext;
+import com.microsoft.aad.adal4j.AuthenticationResult;
+import com.microsoft.aad.adal4j.ClientCredential;
 import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
+import hudson.util.Secret;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import hudson.util.Secret;
 
 public class AzureKeyVaultCredential extends KeyVaultCredentials
 {
@@ -68,12 +72,12 @@ public class AzureKeyVaultCredential extends KeyVaultCredentials
     
     public boolean isApplicationIDValid()
     {
-        return !AzureKeyVaultUtil.isNullOrEmpty(applicationID);
+        return !StringUtils.isEmpty(applicationID);
     }
     
     public boolean isApplicationSecretValid()
     {
-        return !AzureKeyVaultUtil.isNullOrEmpty(applicationSecret);
+        return AzureKeyVaultUtil.isNotEmpty(applicationSecret);
     }
     
     public boolean isValid()

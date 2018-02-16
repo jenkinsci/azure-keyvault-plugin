@@ -24,13 +24,12 @@
  
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
-import com.microsoft.azure.credentials.*;
 import com.microsoft.azure.keyvault.KeyVaultClient;
-import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import hudson.*;
 import hudson.model.*;
@@ -41,11 +40,8 @@ import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.QueryParameter;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.security.cert.Certificate;
@@ -136,7 +132,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     
     // Get the default value only if it is not overridden for this build
     public String getKeyVaultURL() {
-        if (!AzureKeyVaultUtil.isNullOrEmpty(keyVaultURL)) {
+        if (StringUtils.isNotEmpty(keyVaultURL)) {
             return keyVaultURL;
         }
         return this.getDescriptor().getKeyVaultURL();
@@ -169,13 +165,13 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         throws CredentialNotFoundException, CredentialException
     {
         // Try Credential
-        if (!AzureKeyVaultUtil.isNullOrEmpty(_credentialID))
+        if (StringUtils.isNotEmpty(_credentialID))
         {
-            LOGGER.log(Level.INFO, String.format("Fetching credentials by ID"));
+            LOGGER.log(Level.INFO, "Fetching credentials by ID");
             AzureKeyVaultCredential credential = getCredentialById(_credentialID, build);
             if (!credential.isApplicationIDValid())
             {
-                LOGGER.log(Level.INFO, String.format("Credential is password-only. Setting the username"));
+                LOGGER.log(Level.INFO, "Credential is password-only. Setting the username");
                 // Credential only contains the app secret - add the app id
                 credential.setApplicationID(getApplicationID());
             }
@@ -183,7 +179,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         }
         
         // Try AppID/Secret
-        if (!AzureKeyVaultUtil.isNullOrEmpty(_applicationSecret))
+        if (AzureKeyVaultUtil.isNotEmpty(_applicationSecret))
         {
             LOGGER.log(Level.WARNING, String.format("Using explicit application secret. This will be deprecated in 1.0. Use Credential ID instead."));
             return new AzureKeyVaultCredential(getApplicationID(), _applicationSecret);
@@ -193,7 +189,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     }
        
     public String getApplicationID() {
-        if (!AzureKeyVaultUtil.isNullOrEmpty(applicationID))
+        if (StringUtils.isNotEmpty(applicationID))
         {
             LOGGER.log(Level.INFO, String.format("Using override Application ID"));
             return applicationID;

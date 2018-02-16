@@ -28,13 +28,8 @@ import hudson.util.Secret;
 
 public class AzureKeyVaultUtil
 {
-    public static boolean isNullOrEmpty(String s)
+    public static boolean isNotEmpty(Secret s)
     {
-        return s == null || s.isEmpty();
-    }
-    
-    public static boolean isNullOrEmpty(Secret s)
-    {
-        return s == null || s.toString().isEmpty();
+        return s == null || s.getPlainText().isEmpty();
     }
 }
