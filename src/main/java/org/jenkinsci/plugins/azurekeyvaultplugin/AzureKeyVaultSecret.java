@@ -21,18 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
+
 package org.jenkinsci.plugins.azurekeyvaultplugin;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
 
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.ListBoxModel;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
-public class AzureKeyVaultSecret extends 
-    AbstractDescribableImpl<AzureKeyVaultSecret>
+public class AzureKeyVaultSecret extends
+        AbstractDescribableImpl<AzureKeyVaultSecret>
 {
     public static final String typeSecret = "Secret";
     public static final String typeCertificate = "Certificate";
@@ -40,66 +40,70 @@ public class AzureKeyVaultSecret extends
     private String name;
     private String version;
     private String envVariable;
-    
+
     @DataBoundConstructor
-    public AzureKeyVaultSecret(String _secretType, String _name,
-        String _version, String _envVariable) {
-        secretType = _secretType;
-        envVariable = _envVariable;
-        name = _name;
-        version = _version;
+    public AzureKeyVaultSecret(
+            String secretType,
+            String name,
+            String version,
+            String envVariable
+    ) {
+        this.secretType = secretType;
+        this.name = name;
+        this.version = version;
+        this.envVariable = envVariable;
     }
-    
+
     public String getSecretType() {
         return secretType;
     }
-    
+
     @DataBoundSetter
-    public void setSecretType(String _secretType) {
-        secretType = _secretType;
+    public void setSecretType(String secretType) {
+        this.secretType = secretType;
     }
-        
+
     public String getName(){
         return name;
     }
-    
+
     @DataBoundSetter
-    public void setName(String _name) {
-        name = _name;
+    public void setName(String name) {
+        this.name = name;
     }
-    
+
     public String getVersion() {
         return version;
     }
-    
+
     @DataBoundSetter
-    public void setVersion(String _version) {
-        version = _version;
+    public void setVersion(String version) {
+        this.version = version;
     }
-    
+
     public String getEnvVariable() {
         return envVariable;
     }
-    
+
     @DataBoundSetter
-    public void setEnvVariable(String _envVariable) {
-        envVariable = _envVariable;
+    public void setEnvVariable(String envVariable) {
+        this.envVariable = envVariable;
     }
-    
+
     public boolean isPassword() {
         if (secretType == null || !secretType.equals(typeSecret)) {
             return false;
         }
         return true;
     }
-    
+
     public boolean isCertificate() {
         if (secretType == null || !secretType.equals(typeCertificate)) {
             return false;
         }
         return true;
     }
-    
+
     @Extension
     public static final class DescriptorImpl extends Descriptor<AzureKeyVaultSecret> {
         @Override
@@ -107,7 +111,7 @@ public class AzureKeyVaultSecret extends
         {
             return "Secret type, environment variable, and name/version pair for an Azure Key Vault secret";
         }
-        
+
         public ListBoxModel doFillSecretTypeItems() {
             ListBoxModel items = new ListBoxModel();
             items.add(typeSecret, typeSecret);

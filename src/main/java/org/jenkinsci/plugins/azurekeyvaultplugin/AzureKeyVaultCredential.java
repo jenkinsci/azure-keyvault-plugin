@@ -35,6 +35,7 @@ import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import hudson.util.Secret;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -87,7 +88,8 @@ public class AzureKeyVaultCredential extends KeyVaultCredentials
 
     @Override
     public String doAuthenticate(String authorization, String resource, String scope) {
-        AuthenticationResult token = getAccessTokenFromClientCredentials(authorization, resource, applicationID, applicationSecret.toString());
+        Objects.requireNonNull(applicationSecret, "Application secret is a required value");
+        AuthenticationResult token = getAccessTokenFromClientCredentials(authorization, resource, applicationID, applicationSecret.getPlainText());
         return token.getAccessToken();
     }
 
