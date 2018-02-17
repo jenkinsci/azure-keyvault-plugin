@@ -10,7 +10,7 @@
     <relativePath/>
   </parent>
   <artifactId>azure-keyvault</artifactId>
-  <version>0.9.5-hmcts</version>
+  <version>0.9.5-hmcts.2</version>
   <packaging>hpi</packaging>
 
   <properties>
