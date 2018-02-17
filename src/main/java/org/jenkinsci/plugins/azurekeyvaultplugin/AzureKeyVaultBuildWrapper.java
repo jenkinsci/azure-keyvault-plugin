@@ -274,7 +274,11 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     }
         
     public void setUp(Context context, Run<?, ?> build, FilePath workspace,
-      Launcher launcher, TaskListener listener, EnvVars initialEnvironment) {           
+      Launcher launcher, TaskListener listener, EnvVars initialEnvironment) {
+        if (azureKeyVaultSecrets == null || azureKeyVaultSecrets.isEmpty()) {
+            return;
+        }
+
         AzureKeyVaultCredential creds;
         try {
             creds = getKeyVaultCredential(build);
