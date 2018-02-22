@@ -122,8 +122,8 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     }
     
     @DataBoundSetter
-    public void setApplicationSecretOverride(Secret applicationSecret) {
-        this.applicationSecret = applicationSecret;
+    public void setApplicationSecretOverride(String applicationSecret) {
+        this.applicationSecret = Secret.fromString(applicationSecret);
     }
     
     // Override Application Secret ID
