@@ -141,7 +141,11 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         if (StringUtils.isNotEmpty(keyVaultURL)) {
             return keyVaultURL;
         }
-        return this.getDescriptor().getKeyVaultURL();
+        if (StringUtils.isNotEmpty(this.getDescriptor().getKeyVaultURL())) {
+            return this.getDescriptor().getKeyVaultURL();
+        } else {
+            throw new AzureKeyVaultException("No key vault url configured, set one globally or in the build wrap step");
+        }
     }
 
     @Override
