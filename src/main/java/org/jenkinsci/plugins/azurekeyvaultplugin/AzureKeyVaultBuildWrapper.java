@@ -38,17 +38,17 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.console.ConsoleLogFilter;
 import hudson.model.AbstractProject;
-import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.security.ACL;
-import hudson.tasks.BuildWrapper;
+import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.tasks.SimpleBuildWrapper;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -327,15 +327,10 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
      * <p>
      * for the actual HTML fragment for the configuration screen.
      */
-    @Extension // This indicates to Jenkins that this is an implementation of an extension point.
-    public static final class DescriptorImpl extends Descriptor<BuildWrapper> {
-        /**
-         * To persist global configuration information,
-         * simply store it in a field and call save().
-         *
-         * <p>
-         * If you don't want fields to be persisted, use {@code transient}.
-         */
+    @Symbol("withAzureKeyvault")
+    @Extension
+    public static final class DescriptorImpl extends BuildWrapperDescriptor {
+
         private String keyVaultURL;
         private String credentialID;
 
@@ -358,6 +353,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
                     .includeAs(ACL.SYSTEM, item, StandardCredentials.class);
         }
 
+        @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
             // Indicates that this builder can be used with all kinds of project types 
             return true;
@@ -367,7 +363,8 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             return keyVaultURL;
         }
 
-        public void setKeyVaultUrl(String keyVaultURL) {
+        @DataBoundSetter
+        public void setKeyVaultURL(String keyVaultURL) {
             this.keyVaultURL = keyVaultURL;
         }
 
@@ -375,6 +372,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             return credentialID;
         }
 
+        @DataBoundSetter
         public void setCredentialID(String credentialID) {
             this.credentialID = credentialID;
         }
@@ -395,3 +393,5 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     }
 }
 
+//"keyVaultURL" -> "https://infra-vault-sandbox-2.vault.azure.net"
+// "credentialID" -> "sandbox-sp"
