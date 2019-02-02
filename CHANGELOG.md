@@ -7,6 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 Nothing currently
 
-## [0.10.0] - TBD
+## [0.10.0] - 2019/02/02
 
 Initial release under jenkinsci
