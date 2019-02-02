@@ -49,7 +49,6 @@ import hudson.util.Secret;
 import jenkins.tasks.SimpleBuildWrapper;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
-import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -215,15 +214,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             throw new CredentialNotFoundException(credentialID);
         }
         
-        if(StringCredentials.class.isInstance(cred))
-        {
-            // Secret Text object
-            LOGGER.log(Level.FINE, String.format("Fetched %s as StringCredentials", credentialID));
-            CredentialsProvider.track(build, cred);
-            credential.setApplicationSecret(StringCredentials.class.cast(cred).getSecret());
-            return credential;
-        }
-        else if(StandardUsernamePasswordCredentials.class.isInstance(cred))
+        if(StandardUsernamePasswordCredentials.class.isInstance(cred))
         {
             // Username/Password Object
             LOGGER.log(Level.FINE, String.format("Fetched %s as StandardUsernamePasswordCredentials", credentialID));
@@ -245,7 +236,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         {
             throw new CredentialException("Could not determine the type for Secret id "
                     + credentialID +
-                    " only 'Secret Text', 'Username/Password', and 'Microsoft Azure Service Principal' are supported");
+                    " only 'Username/Password', and 'Microsoft Azure Service Principal' are supported");
         }
     }
     
