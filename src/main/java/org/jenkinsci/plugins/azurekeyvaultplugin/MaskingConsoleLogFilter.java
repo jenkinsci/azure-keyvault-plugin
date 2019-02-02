@@ -40,7 +40,7 @@ public class MaskingConsoleLogFilter extends ConsoleLogFilter
             @Override
             protected void eol(byte[] b, int len) throws IOException {
                 p = Pattern.compile(getPatternStringForSecrets(valuesToMask));
-                if (StringUtils.isBlank(p.pattern())){
+                if (StringUtils.isBlank(p.pattern())) {
                     logger.write(b, 0, len);
                     return;
                 }
@@ -62,11 +62,15 @@ public class MaskingConsoleLogFilter extends ConsoleLogFilter
      * @return A {@link String} generated from that collection.
      */
     public static String getPatternStringForSecrets(Collection<String> secrets) {
-        if (secrets == null) return "";
+        if (secrets == null) {
+            return "";
+        }
         StringBuilder b = new StringBuilder();
         List<String> sortedByLength = new ArrayList<>(secrets.size());
         for (String secret : secrets) {
-            if (secret != null) sortedByLength.add(secret);
+            if (secret != null) {
+                sortedByLength.add(secret);
+            }
         }
         Collections.sort(sortedByLength, new Comparator<String>() {
             @Override
