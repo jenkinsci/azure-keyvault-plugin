@@ -90,17 +90,11 @@ public class AzureKeyVaultSecret extends
     }
 
     public boolean isPassword() {
-        if (secretType == null || !secretType.equals(typeSecret)) {
-            return false;
-        }
-        return true;
+        return secretType != null && secretType.equals(typeSecret);
     }
 
     public boolean isCertificate() {
-        if (secretType == null || !secretType.equals(typeCertificate)) {
-            return false;
-        }
-        return true;
+        return secretType != null && secretType.equals(typeCertificate);
     }
 
     @Extension
