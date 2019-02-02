@@ -392,6 +392,3 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         }
     }
 }
-
-//"keyVaultURL" -> "https://infra-vault-sandbox-2.vault.azure.net"
-// "credentialID" -> "sandbox-sp"
