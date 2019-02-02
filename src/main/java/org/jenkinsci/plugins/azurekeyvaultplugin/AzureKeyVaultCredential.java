@@ -1,18 +1,18 @@
 /**
  * The MIT License (MIT)
- *
+ * <p>
  * Copyright (c) 2017 Microsoft Corporation
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,8 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
- 
+
+
 // From azure sdk sample
 // https://azure.github.io/azure-sdk-for-java/com/microsoft/azure/keyvault/authentication/KeyVaultCredentials.html
 
@@ -40,56 +40,48 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class AzureKeyVaultCredential extends KeyVaultCredentials
-{
+public class AzureKeyVaultCredential extends KeyVaultCredentials {
     private String applicationID;
     private Secret applicationSecret;
-    
-    public AzureKeyVaultCredential()
-    {
-        
+
+    public AzureKeyVaultCredential() {
+
     }
-    
-    public AzureKeyVaultCredential(String applicationID, Secret applicationSecret)
-    {
+
+    public AzureKeyVaultCredential(String applicationID, Secret applicationSecret) {
         this.applicationID = applicationID;
         this.applicationSecret = applicationSecret;
     }
-    
-    public void setApplicationID(String applicationID)
-    {
+
+    public void setApplicationID(String applicationID) {
         this.applicationID = applicationID;
     }
-    
-    public void setApplicationSecret(String applicationSecret)
-    {
+
+    public void setApplicationSecret(String applicationSecret) {
         this.applicationSecret = Secret.fromString(applicationSecret);
     }
-    
-    public void setApplicationSecret(Secret applicationSecret)
-    {
+
+    public void setApplicationSecret(Secret applicationSecret) {
         this.applicationSecret = applicationSecret;
     }
-    
-    public boolean isApplicationIDValid()
-    {
+
+    public boolean isApplicationIDValid() {
         return !StringUtils.isEmpty(applicationID);
     }
-    
-    public boolean isApplicationSecretValid()
-    {
+
+    public boolean isApplicationSecretValid() {
         return AzureKeyVaultUtil.isNotEmpty(applicationSecret);
     }
-    
-    public boolean isValid()
-    {
+
+    public boolean isValid() {
         return isApplicationIDValid() && isApplicationSecretValid();
     }
 
     @Override
     public String doAuthenticate(String authorization, String resource, String scope) {
         Objects.requireNonNull(applicationSecret, "Application secret is a required value");
-        AuthenticationResult token = getAccessTokenFromClientCredentials(authorization, resource, applicationID, applicationSecret.getPlainText());
+        AuthenticationResult token = getAccessTokenFromClientCredentials(authorization, resource, applicationID, applicationSecret
+                .getPlainText());
         return token.getAccessToken();
     }
 
