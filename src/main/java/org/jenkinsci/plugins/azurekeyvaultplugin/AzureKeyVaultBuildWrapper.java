@@ -78,10 +78,11 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
-    private List<AzureKeyVaultSecret> azureKeyVaultSecrets;
-    private static char[] emptyCharArray = new char[0];
+    private static final char[] emptyCharArray = new char[0];
     private static final Logger LOGGER = Logger.getLogger("Jenkins.AzureKeyVaultBuildWrapper");
-    private List<String> valuesToMask = new ArrayList<>();
+
+    private final List<AzureKeyVaultSecret> azureKeyVaultSecrets;
+    private final List<String> valuesToMask = new ArrayList<>();
 
     // Instances for this particular build job, 
     // so they can override the global settings

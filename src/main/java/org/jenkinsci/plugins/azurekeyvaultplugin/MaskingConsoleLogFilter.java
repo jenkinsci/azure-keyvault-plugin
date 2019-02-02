@@ -10,8 +10,6 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,18 +20,21 @@ public class MaskingConsoleLogFilter extends ConsoleLogFilter
     private static final long serialVersionUID = 1L;
 
     private final String charsetName;
-    private List<String> valuesToMask;
+    private final List<String> valuesToMask;
 
 
     public MaskingConsoleLogFilter(final String charsetName,
-                                   List<String> valuesToMask) {
+                                   final List<String> valuesToMask
+    ) {
         this.charsetName = charsetName;
         this.valuesToMask = valuesToMask;
     }
 
     @Override
-    public OutputStream decorateLogger(Run run,
-                                       final OutputStream logger) {
+    public OutputStream decorateLogger(
+            Run run,
+            final OutputStream logger
+    ) {
         return new LineTransformationOutputStream() {
             Pattern p;
 
@@ -72,12 +73,7 @@ public class MaskingConsoleLogFilter extends ConsoleLogFilter
                 sortedByLength.add(secret);
             }
         }
-        Collections.sort(sortedByLength, new Comparator<String>() {
-            @Override
-            public int compare(String o1, String o2) {
-                return o2.length() - o1.length();
-            }
-        });
+        sortedByLength.sort((o1, o2) -> o2.length() - o1.length());
 
         for (String secret : sortedByLength) {
             if (b.length() > 0) {

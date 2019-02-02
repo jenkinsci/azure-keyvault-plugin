@@ -22,10 +22,6 @@
  * SOFTWARE.
  */
 
-
-// From azure sdk sample
-// https://azure.github.io/azure-sdk-for-java/com/microsoft/azure/keyvault/authentication/KeyVaultCredentials.html
-
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.microsoft.aad.adal4j.AuthenticationContext;
@@ -86,8 +82,8 @@ public class AzureKeyVaultCredential extends KeyVaultCredentials {
     }
 
     private static AuthenticationResult getAccessTokenFromClientCredentials(String authorization, String resource, String clientId, String clientKey) {
-        AuthenticationContext context = null;
-        AuthenticationResult result = null;
+        AuthenticationContext context;
+        AuthenticationResult result;
         ExecutorService service = null;
         try {
             service = Executors.newFixedThreadPool(1);
