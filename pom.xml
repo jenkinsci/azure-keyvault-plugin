@@ -10,7 +10,7 @@
     <relativePath/>
   </parent>
   <artifactId>azure-keyvault</artifactId>
-  <version>0.9.6-hmcts</version>
+  <version>0.10.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -23,7 +23,7 @@
 
   <name>Azure Key Vault Plugin</name>
   <description>Build wrapper for retrieving secrets from Azure Key Vault</description>
-  <url>https://wiki.jenkins-ci.org/display/JENKINS/Azure+Key+Vault+Plugin</url>
+  <url>https://github.com/jenkinsci/azure-keyvault-plugin/</url>
 
   <licenses>
     <license>
