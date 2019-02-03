@@ -26,7 +26,6 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.microsoft.azure.keyvault.KeyVaultClient;
@@ -46,13 +45,11 @@ import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.tasks.SimpleBuildWrapper;
-import net.sf.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
@@ -88,7 +85,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     // so they can override the global settings
     private String keyVaultURL;
     private String applicationID;
-    private Secret applicationSecret;
+    private String applicationSecret;
     private String credentialID;
 
     @DataBoundConstructor
@@ -117,13 +114,13 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     }
 
     // Override Application Secret
-    public Secret getApplicationSecretOverride() {
+    public String getApplicationSecretOverride() {
         return this.applicationSecret;
     }
 
     @DataBoundSetter
     public void setApplicationSecretOverride(String applicationSecret) {
-        this.applicationSecret = Secret.fromString(applicationSecret);
+        this.applicationSecret = applicationSecret;
     }
 
     // Override Application Secret ID
@@ -138,11 +135,13 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     // Get the default value only if it is not overridden for this build
     public String getKeyVaultURL() {
+        AzureKeyVaultGlobalConfiguration globalConfiguration = AzureKeyVaultGlobalConfiguration.get();
+
         if (StringUtils.isNotEmpty(keyVaultURL)) {
             return keyVaultURL;
         }
-        if (StringUtils.isNotEmpty(this.getDescriptor().getKeyVaultURL())) {
-            return this.getDescriptor().getKeyVaultURL();
+        if (StringUtils.isNotEmpty(globalConfiguration.getKeyVaultURL())) {
+            return globalConfiguration.getKeyVaultURL();
         } else {
             throw new AzureKeyVaultException("No key vault url configured, set one globally or in the build wrap step");
         }
@@ -165,7 +164,11 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
         // Try global values
         LOGGER.log(Level.FINE, "Trying global credentials");
-        credential = getKeyVaultCredential(build, null, getDescriptor().getCredentialID());
+        credential = getKeyVaultCredential(
+                build,
+                null,
+                AzureKeyVaultGlobalConfiguration.get().getCredentialID()
+        );
         if (credential.isValid()) {
             LOGGER.log(Level.FINE, "Using global credentials");
             return credential;
@@ -173,7 +176,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         throw new CredentialNotFoundException("Unable to find a valid credential with provided parameters");
     }
 
-    public AzureKeyVaultCredential getKeyVaultCredential(Run<?, ?> build, Secret applicationSecret, String credentialID)
+    public AzureKeyVaultCredential getKeyVaultCredential(Run<?, ?> build, String applicationSecret, String credentialID)
             throws CredentialException {
         if (StringUtils.isNotEmpty(credentialID)) {
             LOGGER.log(Level.FINE, "Fetching credentials by ID");
@@ -187,10 +190,10 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         }
 
         // Try AppID/Secret
-        if (AzureKeyVaultUtil.isNotEmpty(applicationSecret)) {
+        if (StringUtils.isNotEmpty(applicationSecret)) {
             // Allowed in pipeline, but not global  config
             LOGGER.log(Level.FINE, "Using explicit application secret.");
-            return new AzureKeyVaultCredential(getApplicationID(), applicationSecret);
+            return new AzureKeyVaultCredential(getApplicationID(), Secret.fromString(applicationSecret));
         }
 
         return new AzureKeyVaultCredential();
@@ -327,30 +330,20 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
      * <p>
      * for the actual HTML fragment for the configuration screen.
      */
-    @Symbol("withAzureKeyvault")
     @Extension
+    @Symbol("withAzureKeyvault")
     public static final class DescriptorImpl extends BuildWrapperDescriptor {
 
-        private String keyVaultURL;
-        private String credentialID;
-
-        /**
-         * In order to load the persisted global configuration, you have to
-         * call load() in the constructor.
-         */
         public DescriptorImpl() {
             super(AzureKeyVaultBuildWrapper.class);
             load();
         }
 
-        public ListBoxModel doFillCredentialIDItems(@AncestorInPath Item item) {
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillCredentialIDOverrideItems(@AncestorInPath Item context) {
             return new StandardListBoxModel().includeEmptyValue()
-                    .includeAs(ACL.SYSTEM, item, StandardCredentials.class);
-        }
-
-        public ListBoxModel doFillCredentialIDOverrideItems(@AncestorInPath Item item) {
-            return new StandardListBoxModel().includeEmptyValue()
-                    .includeAs(ACL.SYSTEM, item, StandardCredentials.class);
+                    .includeAs(ACL.SYSTEM, context, StandardUsernamePasswordCredentials.class)
+                    .includeAs(ACL.SYSTEM, context, AzureCredentials.class);
         }
 
         @Override
@@ -359,36 +352,11 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             return true;
         }
 
-        public String getKeyVaultURL() {
-            return keyVaultURL;
-        }
-
-        @DataBoundSetter
-        public void setKeyVaultURL(String keyVaultURL) {
-            this.keyVaultURL = keyVaultURL;
-        }
-
-        public String getCredentialID() {
-            return credentialID;
-        }
-
-        @DataBoundSetter
-        public void setCredentialID(String credentialID) {
-            this.credentialID = credentialID;
-        }
-
         /**
-         * This human readable name is used in the configuration screen.
+         * This human readable name is used in the snippet generator for pipeline.
          */
         public String getDisplayName() {
-            return "Azure Key Vault Plugin";
-        }
-
-        @Override
-        public boolean configure(StaplerRequest req, JSONObject json) {
-            req.bindJSON(this, json);
-            save();
-            return true;
+            return "Bind credentials in Azure Key Vault to variables";
         }
     }
 }
