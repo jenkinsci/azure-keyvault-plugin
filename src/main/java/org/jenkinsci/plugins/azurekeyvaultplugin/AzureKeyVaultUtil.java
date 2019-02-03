@@ -26,8 +26,8 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import hudson.util.Secret;
 
-public class AzureKeyVaultUtil {
-    public static boolean isNotEmpty(Secret secret) {
+class AzureKeyVaultUtil {
+    static boolean isNotEmpty(Secret secret) {
         return secret != null && !secret.getPlainText().isEmpty();
     }
 }
