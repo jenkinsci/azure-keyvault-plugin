@@ -4,41 +4,102 @@ This works similarly to the [Credential Binding Plugin](https://wiki.jenkins-ci.
 The plugin acts as an Azure Active Directory Application and must be configured with an Application ID and Token. Additional details [here](https://docs.microsoft.com/en-us/azure/app-service-mobile/app-service-mobile-how-to-configure-active-directory-authentication#optional-configure-a-native-client-application).
 
 ## System Configuration
+
+### Via UI
+
 In the Jenkins **Configure System** page, configure the following three options in the **Azure Key Vault Plugin** section
 * **Key Vault URL** - The url where your keyvault resides (e.g. `https://myvault.vault.azure.net/`)
-* **Application ID** - An application ID that is permitted to access the serets in your keyvault. ([More details](https://docs.microsoft.com/en-us/azure/app-service-mobile/app-service-mobile-how-to-configure-active-directory-authentication#optional-configure-a-native-client-application))
-* **Application Secret** - A secret/token that is associated with your Azure AD application. **This wil be deprecated in version 1.0**
-* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Both **Secret Text** and **Username/Password** types are supported
-  * If the credential is **Secret Text** then the Application ID field **must** also be filled in.
-  * If the credential is **Username/Password** then the Application ID field can be left blank. The Application ID and Application Secret are retrieved from the Username and Password fields of the specified credential.
+* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Both **Microsoft Azure Service Principal** and **Username/Password** types are supported
 
-## Job Configuration
-In each build job that will use the plugin, configure the following in the **Azure Key Vault Plugin** section
-* **Secret Type** - There are two options - Secrets (AKA passwords) and Certificates.
-* **Name** - The name Key Vault uses to store this password.
-* **Version** - The version of the secret to retrieve from Key Vault.
-* **Environment Variable** - The variable to which the secret will be bound, so it can be used in your build steps.
-  * For **Secrets**, the variable will hold the value of the secret
-  * For **Certificates**, the variable will hold the path to the certificate file on disk
-* _(Optional)_ Override the **Key Vault URL, Application ID, or Application Secret**. This is useful if different vaults are used by different jobs.
+### Via configuration as code
+
+This plugin supports being configured with [configuration as code](https://github.com/jenkinsci/configuration-as-code-plugin/)
+It requires both `configuration-as-code` and `configuration-as-code-support` plugins to be installed (support is required for credentials to be added)
+
+Example yaml:
+```yaml
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+        - azure:
+            azureEnvironmentName: "Azure"
+            clientId: "d63d9de6-5f7a-48c1-ac1d-e90d4f5e5dcc"
+            clientSecret: "${CLIENT_SECRET}"
+            description: "An azure service principal"
+            id: "service-principal"
+            scope: SYSTEM
+            subscriptionId: "d63d9de6-5f7a-48c1-ac1d-e90d4f5e5dcc"
+            tenant: "d63d9de6-5f7a-48c1-ac1d-e90d4f5e5dcc"
+
+unclassified:
+  azureKeyVault:
+    keyVaultURL: https://not-a-real-vault.vault.azure.net
+    credentialID: service-principal
+```
+
+You can also use a username / password credential:
+```yaml
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+        - usernamePassword:
+            scope:    SYSTEM
+            id:       "service-principal"
+            username: client_id
+            password: "${CLIENT_SECRET"
+```
+
 
 ## Building the Plugin
-* Run **mvn install**, a .hpi file will be generted in the target folder.
+* Run **mvn package**, an .hpi file will be generated in the target folder.
 
 # Plugin Usage
 ### Usage in Jenkinsfile
+Note that the example echos below will only show *****'s as the plugin redacts secrets found in the build log inside the
+`withAzureKeyvault` build wrapper.
+
+
+Simple version:
 ```groovy
 node {
     def secrets = [
-        [ $class: 'AzureKeyVaultSecret', secretType: 'Certificate', name: 'MyCert00', version: '', envVariable: 'AzureKeyVault' ]
+        [ secretType: 'Certificate', name: 'MyCert00', version: '', envVariable: 'CERTIFICATE' ],
+        [ secretType: 'Secret', name: 'MySecret00', version: '', envVariable: 'SECRET' ]
     ]
 
-    wrap([$class: 'AzureKeyVaultBuildWrapper',
-        azureKeyVaultSecrets: secrets,
-        keyVaultURLOverride: 'https://mykeyvault.vault.azure.net',
-        credentialIDOverride: 'SPN_KEY_VAULT'
-    ]) {
-        sh 'echo $AzureKeyVault'
+    withAzureKeyvault(secrets) {
+        sh 'echo $CERTIFICATE'
+        sh 'echo $SECRET'
     }
 }
+
+```
+
+With overrides:
+```groovy
+static LinkedHashMap<String, Object> secret(String secretName, String envVar) {
+  [ 
+    secretType: 'Secret',
+    name: secretName,
+    version: '',
+    envVariable: envVar
+  ]
+}
+
+node {
+    def secrets = [
+        secret('my-secret', 'MY_SECRET')
+    ]
+
+    withAzureKeyvault(
+            azureKeyVaultSecrets: secrets, 
+            keyVaultURLOverride: 'https://mykeyvault.vault.azure.net',
+            credentialIDOverride: 'service-principal'
+    ) {
+        sh 'echo $MY_SECRET'
+     }
+}
+
 ```

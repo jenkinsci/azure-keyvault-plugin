@@ -1,0 +1,18 @@
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+        - azure:
+            azureEnvironmentName: "Azure"
+            clientId: "d63d9de6-5f7a-48c1-ac1d-e90d4f5e5dcc"
+            clientSecret: "not a real secret"
+            description: "An azure service principal"
+            id: "service-principal"
+            scope: GLOBAL
+            subscriptionId: "d63d9de6-5f7a-48c1-ac1d-e90d4f5e5dcc"
+            tenant: "d63d9de6-5f7a-48c1-ac1d-e90d4f5e5dcc"
+
+unclassified:
+  azureKeyVault:
+    keyVaultURL: https://not-a-real-vault.vault.azure.net
+    credentialID: service-principal
