@@ -153,6 +153,20 @@
       <artifactId>azure-credentials</artifactId>
       <version>${azure-credentials.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>io.jenkins</groupId>
+      <artifactId>configuration-as-code</artifactId>
+      <version>1.5</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.configuration-as-code</groupId>
+      <artifactId>configuration-as-code-support</artifactId>
+      <version>1.5</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
 </project>
