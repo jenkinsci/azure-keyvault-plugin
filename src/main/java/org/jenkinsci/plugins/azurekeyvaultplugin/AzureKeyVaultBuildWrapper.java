@@ -281,7 +281,13 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
                     valuesToMask.add(bundle.value());
                     context.env(secret.getEnvVariable(), bundle.value());
                 } else {
-                    throw new AzureKeyVaultException(String.format("Secret: %s not found", secret.getName()));
+                    throw new AzureKeyVaultException(
+                            String.format(
+                                    "Secret: %s not found in vault: %s",
+                                    secret.getName(),
+                                    getKeyVaultURL()
+                            )
+                    );
                 }
             } else if (secret.isCertificate()) {
                 // Get Certificate from Keyvault as a Secret
