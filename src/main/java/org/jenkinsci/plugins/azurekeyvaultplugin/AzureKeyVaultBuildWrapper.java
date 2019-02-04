@@ -281,43 +281,56 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
                     valuesToMask.add(bundle.value());
                     context.env(secret.getEnvVariable(), bundle.value());
                 } else {
-                    throw new AzureKeyVaultException(String.format("Secret: %s not found", secret.getName()));
+                    throw new AzureKeyVaultException(
+                            String.format(
+                                    "Secret: %s not found in vault: %s",
+                                    secret.getName(),
+                                    getKeyVaultURL()
+                            )
+                    );
                 }
             } else if (secret.isCertificate()) {
                 // Get Certificate from Keyvault as a Secret
                 SecretBundle bundle = getSecret(client, secret);
-                if (bundle == null) {
-                    continue;
-                }
-                try {
-                    // Base64 decode the result and use a keystore to parse the key/cert
-                    byte[] bytes = DatatypeConverter.parseBase64Binary(bundle.value());
-                    KeyStore ks = KeyStore.getInstance("PKCS12");
-                    ks.load(new ByteArrayInputStream(bytes), emptyCharArray);
+                if (bundle != null) {
+                    try {
+                        // Base64 decode the result and use a keystore to parse the key/cert
+                        byte[] bytes = DatatypeConverter.parseBase64Binary(bundle.value());
+                        KeyStore ks = KeyStore.getInstance("PKCS12");
+                        ks.load(new ByteArrayInputStream(bytes), emptyCharArray);
 
-                    // Extract the key(s) and cert(s) and save them in a *second* keystore
-                    // because the first keystore yields a corrupted PFX when written to disk
-                    KeyStore ks2 = KeyStore.getInstance("PKCS12");
-                    ks2.load(null, null);
+                        // Extract the key(s) and cert(s) and save them in a *second* keystore
+                        // because the first keystore yields a corrupted PFX when written to disk
+                        KeyStore ks2 = KeyStore.getInstance("PKCS12");
+                        ks2.load(null, null);
 
-                    for (Enumeration<String> e = ks.aliases(); e.hasMoreElements(); ) {
-                        String alias = e.nextElement();
-                        Certificate[] chain = ks.getCertificateChain(alias);
-                        Key privateKey = ks.getKey(alias, emptyCharArray);
-                        ks2.setKeyEntry(alias, privateKey, emptyCharArray, chain);
+                        for (Enumeration<String> e = ks.aliases(); e.hasMoreElements(); ) {
+                            String alias = e.nextElement();
+                            Certificate[] chain = ks.getCertificateChain(alias);
+                            Key privateKey = ks.getKey(alias, emptyCharArray);
+                            ks2.setKeyEntry(alias, privateKey, emptyCharArray, chain);
+                        }
+
+                        // Write PFX to disk on executor, which may be a separate physical system
+                        FilePath outFile = workspace.createTempFile("keyvault", "pfx");
+                        OutputStream outFileStream = outFile.write();
+                        ks2.store(outFileStream, emptyCharArray);
+                        outFileStream.close();
+                        URI uri = outFile.toURI();
+                        valuesToMask.add(uri.getPath());
+                        context.env(secret.getEnvVariable(), uri.getPath());
+
+                    } catch (Exception e) {
+                        throw new AzureKeyVaultException(e.getMessage(), e);
                     }
-
-                    // Write PFX to disk on executor, which may be a separate physical system
-                    FilePath outFile = workspace.createTempFile("keyvault", "pfx");
-                    OutputStream outFileStream = outFile.write();
-                    ks2.store(outFileStream, emptyCharArray);
-                    outFileStream.close();
-                    URI uri = outFile.toURI();
-                    valuesToMask.add(uri.getPath());
-                    context.env(secret.getEnvVariable(), uri.getPath());
-
-                } catch (Exception e) {
-                    throw new AzureKeyVaultException(e.getMessage(), e);
+                } else {
+                    throw new AzureKeyVaultException(
+                            String.format(
+                                    "Certificate: %s not found in vault: %s",
+                                    secret.getName(),
+                                    getKeyVaultURL()
+                            )
+                    );
                 }
             }
         }
