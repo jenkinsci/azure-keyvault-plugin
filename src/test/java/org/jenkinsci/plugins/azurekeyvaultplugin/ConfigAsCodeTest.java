@@ -1,12 +1,11 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import io.jenkins.plugins.casc.ConfigurationAsCode;
-import io.jenkins.plugins.casc.ConfiguratorException;
-import org.junit.Before;
+import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
+import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.JenkinsRule;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -17,15 +16,10 @@ import static org.junit.Assert.assertTrue;
 public class ConfigAsCodeTest {
 
     @Rule
-    public JenkinsRule r = new JenkinsRule();
-
-    @Before
-    public void init() throws ConfiguratorException {
-        ConfigurationAsCode.get()
-                .configure(ConfigAsCodeTest.class.getResource("configuration-as-code.yml").toString());
-    }
+    public JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
 
     @Test
+    @ConfiguredWithCode("global-config.yml")
     public void should_support_configuration_as_code() {
         AzureKeyVaultGlobalConfiguration globalConfiguration = AzureKeyVaultGlobalConfiguration.get();
 
@@ -34,6 +28,7 @@ public class ConfigAsCodeTest {
     }
 
     @Test
+    @ConfiguredWithCode("global-config.yml")
     @Ignore("configAsCodeOutput doesn't contain the expected output, but the global config is set correctly and manual ui export works")
     public void export_configuration() throws Exception {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

@@ -157,7 +157,14 @@
     <dependency>
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
-      <version>1.5</version>
+      <version>1.8</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins</groupId>
+      <artifactId>configuration-as-code</artifactId>
+      <version>1.8</version>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
