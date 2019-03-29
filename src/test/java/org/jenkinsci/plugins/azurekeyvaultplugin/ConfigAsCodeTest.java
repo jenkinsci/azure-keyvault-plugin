@@ -1,31 +1,26 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
-import io.jenkins.plugins.casc.ConfigurationAsCode;
-import io.jenkins.plugins.casc.ConfiguratorException;
-import org.junit.Before;
+import io.jenkins.plugins.casc.ConfigurationContext;
+import io.jenkins.plugins.casc.Configurator;
+import io.jenkins.plugins.casc.ConfiguratorRegistry;
+import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
+import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.casc.model.CNode;
+import io.jenkins.plugins.casc.model.Mapping;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.JenkinsRule;
-
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 public class ConfigAsCodeTest {
 
     @Rule
-    public JenkinsRule r = new JenkinsRule();
-
-    @Before
-    public void init() throws ConfiguratorException {
-        ConfigurationAsCode.get()
-                .configure(ConfigAsCodeTest.class.getResource("configuration-as-code.yml").toString());
-    }
+    public JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
 
     @Test
+    @ConfiguredWithCode("global-config.yml")
     public void should_support_configuration_as_code() {
         AzureKeyVaultGlobalConfiguration globalConfiguration = AzureKeyVaultGlobalConfiguration.get();
 
@@ -34,19 +29,21 @@ public class ConfigAsCodeTest {
     }
 
     @Test
+    @ConfiguredWithCode("global-config.yml")
     @Ignore("configAsCodeOutput doesn't contain the expected output, but the global config is set correctly and manual ui export works")
     public void export_configuration() throws Exception {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ConfigurationAsCode.get().export(outputStream);
-        String configAsCodeOutput = new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
-
         AzureKeyVaultGlobalConfiguration globalConfiguration = AzureKeyVaultGlobalConfiguration.get();
 
-        assertEquals(globalConfiguration.getKeyVaultURL(), "https://not-a-real-vault.vault.azure.net");
-        assertEquals(globalConfiguration.getCredentialID(), "service-principal");
+        ConfiguratorRegistry registry = ConfiguratorRegistry.get();
+        ConfigurationContext context = new ConfigurationContext(registry);
+        final Configurator c = context.lookupOrFail(AzureKeyVaultGlobalConfiguration.class);
 
-        System.out.println(configAsCodeOutput);
-        assertTrue("blah", configAsCodeOutput.contains("keyVaultURL: https://not-a-real-vault.vault.azure.net"));
-        assertTrue("blah2", configAsCodeOutput.contains("credentialID: service-principal"));
+        @SuppressWarnings("unchecked")
+        CNode node = c.describe(globalConfiguration, context);
+        assertNotNull(node);
+        final Mapping mapping = node.asMapping();
+
+        assertEquals(mapping.getScalarValue("keyVaultURL"), "https://not-a-real-vault.vault.azure.net");
+        assertEquals(mapping.getScalarValue("credentialID"), "service-principal");
     }
 }    
