@@ -16,7 +16,7 @@
     <jenkins.version>2.138.2</jenkins.version>
     <java.level>8</java.level>
     <azure-credentials.version>1.6.0</azure-credentials.version>
-    <jcasc.version>1.8</jcasc.version>
+    <jcasc.version>1.11</jcasc.version>
   </properties>
 
   <name>Azure Key Vault Plugin</name>

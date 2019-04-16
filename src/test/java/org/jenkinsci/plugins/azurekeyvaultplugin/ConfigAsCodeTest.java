@@ -30,7 +30,6 @@ public class ConfigAsCodeTest {
 
     @Test
     @ConfiguredWithCode("global-config.yml")
-    @Ignore("configAsCodeOutput doesn't contain the expected output, but the global config is set correctly and manual ui export works")
     public void export_configuration() throws Exception {
         AzureKeyVaultGlobalConfiguration globalConfiguration = AzureKeyVaultGlobalConfiguration.get();
 
