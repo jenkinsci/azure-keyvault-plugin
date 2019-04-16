@@ -32,6 +32,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setKeyVaultURL(String keyVaultURL) {
         this.keyVaultURL = keyVaultURL;
+        save();
     }
 
     public String getCredentialID() {
@@ -41,6 +42,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setCredentialID(String credentialID) {
         this.credentialID = credentialID;
+        save();
     }
 
     @SuppressWarnings("unused")
