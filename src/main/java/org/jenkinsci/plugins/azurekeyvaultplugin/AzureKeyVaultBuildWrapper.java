@@ -1,4 +1,4 @@
-/**
+/*
  * The MIT License (MIT)
  * <p>
  * Copyright (c) 2017 Microsoft Corporation
@@ -67,6 +67,8 @@ import javax.annotation.Nonnull;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.CredentialNotFoundException;
 import javax.xml.bind.DatatypeConverter;
+
+import static java.lang.String.format;
 
 /**
  * Wraps a build with azure key vault secrets / certificates
@@ -215,15 +217,15 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             throw new CredentialNotFoundException(credentialID);
         }
 
-        if (StandardUsernamePasswordCredentials.class.isInstance(cred)) {
+        if (cred instanceof StandardUsernamePasswordCredentials) {
             // Username/Password Object
-            LOGGER.log(Level.FINE, String.format("Fetched %s as StandardUsernamePasswordCredentials", credentialID));
+            LOGGER.log(Level.FINE, format("Fetched %s as StandardUsernamePasswordCredentials", credentialID));
             CredentialsProvider.track(build, cred);
-            credential.setApplicationID(StandardUsernamePasswordCredentials.class.cast(cred).getUsername());
-            credential.setApplicationSecret(StandardUsernamePasswordCredentials.class.cast(cred).getPassword());
+            credential.setApplicationID(((StandardUsernamePasswordCredentials) cred).getUsername());
+            credential.setApplicationSecret(((StandardUsernamePasswordCredentials) cred).getPassword());
             return credential;
-        } else if (AzureCredentials.class.isInstance(cred)) {
-            LOGGER.log(Level.FINE, String.format("Fetched %s as AzureCredentials", credentialID));
+        } else if (cred instanceof AzureCredentials) {
+            LOGGER.log(Level.FINE, format("Fetched %s as AzureCredentials", credentialID));
             CredentialsProvider.track(build, cred);
             AzureCredentials azureCredentials = (AzureCredentials) cred;
 
@@ -250,10 +252,17 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     }
 
     private SecretBundle getSecret(KeyVaultClient client, AzureKeyVaultSecret secret) {
+        String keyVaultURL = getKeyVaultURL();
         try {
-            return client.getSecret(getKeyVaultURL(), secret.getName(), secret.getVersion());
+            return client.getSecret(keyVaultURL, secret.getName(), secret.getVersion());
         } catch (Exception e) {
-            throw new AzureKeyVaultException(e.getMessage(), e);
+            throw new AzureKeyVaultException(
+                    format(
+                            "Failed to retrieve secret %s from vault %s, error message: %s",
+                            secret.getName(),
+                            keyVaultURL,
+                            e.getMessage()
+                    ), e);
         }
     }
 
@@ -274,6 +283,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         }
         KeyVaultClient client = new KeyVaultClient(creds);
 
+        String keyVaultURL = getKeyVaultURL();
         for (AzureKeyVaultSecret secret : azureKeyVaultSecrets) {
             if (secret.isPassword()) {
                 SecretBundle bundle = getSecret(client, secret);
@@ -282,10 +292,10 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
                     context.env(secret.getEnvVariable(), bundle.value());
                 } else {
                     throw new AzureKeyVaultException(
-                            String.format(
+                            format(
                                     "Secret: %s not found in vault: %s",
                                     secret.getName(),
-                                    getKeyVaultURL()
+                                    keyVaultURL
                             )
                     );
                 }
@@ -325,10 +335,10 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
                     }
                 } else {
                     throw new AzureKeyVaultException(
-                            String.format(
+                            format(
                                     "Certificate: %s not found in vault: %s",
                                     secret.getName(),
-                                    getKeyVaultURL()
+                                    keyVaultURL
                             )
                     );
                 }
