@@ -29,6 +29,7 @@ import com.microsoft.aad.adal4j.AuthenticationResult;
 import com.microsoft.aad.adal4j.ClientCredential;
 import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import hudson.util.Secret;
+import java.io.Serializable;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
@@ -36,7 +37,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class AzureKeyVaultCredential extends KeyVaultCredentials {
+public class AzureKeyVaultCredential extends KeyVaultCredentials implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private String applicationID;
     private Secret applicationSecret;
 

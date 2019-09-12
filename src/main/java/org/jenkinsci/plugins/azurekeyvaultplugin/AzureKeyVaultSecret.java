@@ -28,11 +28,15 @@ import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.ListBoxModel;
+import java.io.Serializable;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public class AzureKeyVaultSecret extends
-        AbstractDescribableImpl<AzureKeyVaultSecret> {
+        AbstractDescribableImpl<AzureKeyVaultSecret> implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+    
     public static final String typeSecret = "Secret";
     public static final String typeCertificate = "Certificate";
     private String secretType;

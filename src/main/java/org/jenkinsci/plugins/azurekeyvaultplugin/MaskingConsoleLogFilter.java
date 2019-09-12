@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 import hudson.console.ConsoleLogFilter;
 import hudson.console.LineTransformationOutputStream;
 import hudson.model.Run;
+import java.nio.charset.Charset;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
