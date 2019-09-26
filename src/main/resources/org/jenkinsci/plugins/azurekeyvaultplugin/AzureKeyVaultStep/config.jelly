@@ -1,0 +1,21 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:c="/lib/credentials" xmlns:f="/lib/form">
+  <f:section title="Azure Key Vault Build wrapper">
+
+    <f:block>
+      <table>
+        <f:entry title="Override Key Vault URL" field="keyVaultURL">
+          <f:textbox />
+        </f:entry>
+        <f:entry title="Override Credential ID" field="credentialID">
+          <c:select />
+        </f:entry>
+      </table>
+    </f:block>
+
+    <f:entry>
+      <f:repeatableProperty field="secrets" minimum="1" maximum="1" header="Azure Key Vault Secret" add="Add a Key Vault secret"></f:repeatableProperty>
+    </f:entry>
+
+  </f:section>
+</j:jelly>

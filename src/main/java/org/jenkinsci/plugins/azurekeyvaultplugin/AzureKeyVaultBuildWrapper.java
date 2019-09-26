@@ -67,7 +67,6 @@ import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialR
 
 /**
  * Wraps a build with azure key vault secrets / certificates
- *
  */
 public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
@@ -77,8 +76,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     private final List<AzureKeyVaultSecret> azureKeyVaultSecrets;
     private final List<String> valuesToMask = new ArrayList<>();
 
-    // Instances for this particular build job, 
-    // so they can override the global settings
+    // Instances for this particular build job so they can override the global settings
     private String keyVaultURL;
     private String applicationID;
     private String applicationSecret;
@@ -320,7 +318,6 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            // Indicates that this builder can be used with all kinds of project types 
             return true;
         }
 

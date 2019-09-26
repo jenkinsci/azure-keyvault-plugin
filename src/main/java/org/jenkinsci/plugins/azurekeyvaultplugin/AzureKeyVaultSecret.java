@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.ListBoxModel;
@@ -36,7 +37,7 @@ public class AzureKeyVaultSecret extends
         AbstractDescribableImpl<AzureKeyVaultSecret> implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    
+
     public static final String typeSecret = "Secret";
     public static final String typeCertificate = "Certificate";
     private String secretType;
@@ -44,7 +45,6 @@ public class AzureKeyVaultSecret extends
     private String version;
     private String envVariable;
 
-    @DataBoundConstructor
     public AzureKeyVaultSecret(
             String secretType,
             String name,
@@ -57,23 +57,23 @@ public class AzureKeyVaultSecret extends
         this.envVariable = envVariable;
     }
 
-    public String getSecretType() {
-        return secretType;
+    @DataBoundConstructor
+    public AzureKeyVaultSecret(
+            String secretType,
+            String name,
+            String envVariable
+    ) {
+        this(secretType, name, null, envVariable);
     }
 
-    @DataBoundSetter
-    public void setSecretType(String secretType) {
-        this.secretType = secretType;
+    public String getSecretType() {
+        return secretType;
     }
 
     public String getName() {
         return name;
     }
 
-    @DataBoundSetter
-    public void setName(String name) {
-        this.name = name;
-    }
 
     public String getVersion() {
         return version;
@@ -81,16 +81,11 @@ public class AzureKeyVaultSecret extends
 
     @DataBoundSetter
     public void setVersion(String version) {
-        this.version = version;
+        this.version = Util.fixEmpty(version);
     }
 
     public String getEnvVariable() {
         return envVariable;
-    }
-
-    @DataBoundSetter
-    public void setEnvVariable(String envVariable) {
-        this.envVariable = envVariable;
     }
 
     public boolean isPassword() {

@@ -65,8 +65,9 @@ Simple version:
 ```groovy
 node {
     def secrets = [
-        [ secretType: 'Certificate', name: 'MyCert00', version: '', envVariable: 'CERTIFICATE' ],
-        [ secretType: 'Secret', name: 'MySecret00', version: '', envVariable: 'SECRET' ]
+        [ secretType: 'Certificate', name: 'MyCert00', envVariable: 'CERTIFICATE' ],
+        [ secretType: 'Secret', name: 'MySecret00', envVariable: 'SECRET' ],
+        [ secretType: 'Secret', name: 'MySecret00', version: '342432lkjhdasjld', envVariable: 'SECRET' ]
     ]
 
     withAzureKeyvault(secrets) {
@@ -83,7 +84,7 @@ static LinkedHashMap<String, Object> secret(String secretName, String envVar) {
   [ 
     secretType: 'Secret',
     name: secretName,
-    version: '',
+    version: '342432lkjhdasjld',
     envVariable: envVar
   ]
 }
