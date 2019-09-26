@@ -7,7 +7,6 @@ import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.casc.model.Mapping;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -45,4 +44,4 @@ public class ConfigAsCodeTest {
         assertEquals(mapping.getScalarValue("keyVaultURL"), "https://not-a-real-vault.vault.azure.net");
         assertEquals(mapping.getScalarValue("credentialID"), "service-principal");
     }
-}    
+}

@@ -3,8 +3,6 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 import hudson.console.ConsoleLogFilter;
 import hudson.console.LineTransformationOutputStream;
 import hudson.model.Run;
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -13,6 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 
 /*The logic in this class is borrowed from https://github.com/jenkinsci/credentials-binding-plugin/*/
 public class MaskingConsoleLogFilter extends ConsoleLogFilter
@@ -83,6 +82,4 @@ public class MaskingConsoleLogFilter extends ConsoleLogFilter
         }
         return b.toString();
     }
-
-
 }
