@@ -44,13 +44,6 @@ import hudson.security.ACL;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
-import jenkins.tasks.SimpleBuildWrapper;
-import org.apache.commons.lang3.StringUtils;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
 import java.net.URI;
@@ -67,6 +60,12 @@ import javax.annotation.Nonnull;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.CredentialNotFoundException;
 import javax.xml.bind.DatatypeConverter;
+import jenkins.tasks.SimpleBuildWrapper;
+import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import static java.lang.String.format;
 
@@ -83,8 +82,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     private final List<AzureKeyVaultSecret> azureKeyVaultSecrets;
     private final List<String> valuesToMask = new ArrayList<>();
 
-    // Instances for this particular build job, 
-    // so they can override the global settings
+    // Instances for this particular build job so they can override the global settings
     private String keyVaultURL;
     private String applicationID;
     private String applicationSecret;
@@ -371,7 +369,6 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
-            // Indicates that this builder can be used with all kinds of project types 
             return true;
         }
 
