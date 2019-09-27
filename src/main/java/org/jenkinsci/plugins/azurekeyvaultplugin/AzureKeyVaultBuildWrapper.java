@@ -24,8 +24,6 @@
 
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.microsoft.azure.keyvault.KeyVaultClient;
@@ -53,12 +51,9 @@ import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.security.auth.login.CredentialException;
-import javax.security.auth.login.CredentialNotFoundException;
 import javax.xml.bind.DatatypeConverter;
 import jenkins.tasks.SimpleBuildWrapper;
 import org.apache.commons.lang3.StringUtils;
@@ -68,11 +63,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import static java.lang.String.format;
+import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getCredentialById;
 
 /**
  * Wraps a build with azure key vault secrets / certificates
- *
- * @author Kohsuke Kawaguchi
  */
 public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
@@ -153,46 +147,39 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     }
 
 
-    public AzureKeyVaultCredential getKeyVaultCredential(Run<?, ?> build) throws CredentialException {
+    public AzureKeyVaultCredential getKeyVaultCredential(Run<?, ?> build) {
         // Try override values
-        LOGGER.log(Level.FINE, "Trying override credentials...");
+        LOGGER.fine("Trying override credentials...");
         AzureKeyVaultCredential credential = getKeyVaultCredential(build, this.applicationSecret, this.credentialID);
         if (credential.isValid()) {
-            LOGGER.log(Level.FINE, "Using override credentials");
+            LOGGER.fine("Using override credentials");
             return credential;
         }
 
         // Try global values
-        LOGGER.log(Level.FINE, "Trying global credentials");
+        LOGGER.fine("Trying global credentials");
         credential = getKeyVaultCredential(
                 build,
                 null,
                 AzureKeyVaultGlobalConfiguration.get().getCredentialID()
         );
         if (credential.isValid()) {
-            LOGGER.log(Level.FINE, "Using global credentials");
+            LOGGER.fine("Using global credentials");
             return credential;
         }
-        throw new CredentialNotFoundException("Unable to find a valid credential with provided parameters");
+        throw new AzureKeyVaultException("Unable to find a valid credential with provided parameters");
     }
 
-    public AzureKeyVaultCredential getKeyVaultCredential(Run<?, ?> build, String applicationSecret, String credentialID)
-            throws CredentialException {
+    public AzureKeyVaultCredential getKeyVaultCredential(Run<?, ?> build, String applicationSecret, String credentialID) {
         if (StringUtils.isNotEmpty(credentialID)) {
-            LOGGER.log(Level.FINE, "Fetching credentials by ID");
-            AzureKeyVaultCredential credential = getCredentialById(credentialID, build);
-            if (!credential.isApplicationIDValid()) {
-                LOGGER.log(Level.FINE, "Credential is password-only. Setting the username");
-                // Credential only contains the app secret - add the app id
-                credential.setApplicationID(getApplicationID());
-            }
-            return credential;
+            LOGGER.fine("Fetching credentials by ID");
+            return getCredentialById(credentialID, build);
         }
 
         // Try AppID/Secret
         if (StringUtils.isNotEmpty(applicationSecret)) {
             // Allowed in pipeline, but not global  config
-            LOGGER.log(Level.FINE, "Using explicit application secret.");
+            LOGGER.fine("Using explicit application secret.");
             return new AzureKeyVaultCredential(getApplicationID(), Secret.fromString(applicationSecret));
         }
 
@@ -201,40 +188,10 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     public String getApplicationID() {
         if (StringUtils.isNotEmpty(applicationID)) {
-            LOGGER.log(Level.FINE, "Using override Application ID");
+            LOGGER.fine("Using override Application ID");
             return applicationID;
         }
         return null;
-    }
-
-    public AzureKeyVaultCredential getCredentialById(String credentialID, Run<?, ?> build) throws CredentialException {
-        AzureKeyVaultCredential credential = new AzureKeyVaultCredential();
-        IdCredentials cred = CredentialsProvider.findCredentialById(credentialID, IdCredentials.class, build);
-
-        if (cred == null) {
-            throw new CredentialNotFoundException(credentialID);
-        }
-
-        if (cred instanceof StandardUsernamePasswordCredentials) {
-            // Username/Password Object
-            LOGGER.log(Level.FINE, format("Fetched %s as StandardUsernamePasswordCredentials", credentialID));
-            CredentialsProvider.track(build, cred);
-            credential.setApplicationID(((StandardUsernamePasswordCredentials) cred).getUsername());
-            credential.setApplicationSecret(((StandardUsernamePasswordCredentials) cred).getPassword());
-            return credential;
-        } else if (cred instanceof AzureCredentials) {
-            LOGGER.log(Level.FINE, format("Fetched %s as AzureCredentials", credentialID));
-            CredentialsProvider.track(build, cred);
-            AzureCredentials azureCredentials = (AzureCredentials) cred;
-
-            credential.setApplicationID(azureCredentials.getClientId());
-            credential.setApplicationSecret(azureCredentials.getPlainClientSecret());
-            return credential;
-        } else {
-            throw new CredentialException("Could not determine the type for Secret id "
-                    + credentialID +
-                    " only 'Username/Password', and 'Microsoft Azure Service Principal' are supported");
-        }
     }
 
     public List<AzureKeyVaultSecret> getAzureKeyVaultSecrets() {
@@ -270,15 +227,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             return;
         }
 
-        AzureKeyVaultCredential creds;
-        try {
-            creds = getKeyVaultCredential(build);
-        } catch (CredentialException ex) {
-            throw new AzureKeyVaultException(ex.getMessage(), ex);
-        }
-        if (creds == null || !creds.isValid()) {
-            throw new AzureKeyVaultException("No valid credentials were found for accessing KeyVault");
-        }
+        AzureKeyVaultCredential creds = getKeyVaultCredential(build);
         KeyVaultClient client = new KeyVaultClient(creds);
 
         String keyVaultURL = getKeyVaultURL();
