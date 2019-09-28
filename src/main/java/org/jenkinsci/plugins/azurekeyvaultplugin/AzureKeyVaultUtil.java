@@ -24,10 +24,54 @@
 
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
+import hudson.FilePath;
 import hudson.util.Secret;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.security.GeneralSecurityException;
+import java.security.Key;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.util.Enumeration;
+import javax.xml.bind.DatatypeConverter;
 
 class AzureKeyVaultUtil {
+
+    private static final char[] EMPTY_CHAR_ARRAY = new char[0];
+    private static final String PKCS12 = "PKCS12";
+
     static boolean isNotEmpty(Secret secret) {
         return secret != null && !secret.getPlainText().isEmpty();
+    }
+
+    static String convertAndWritePfxToDisk(FilePath workspace, String secret)
+            throws IOException, GeneralSecurityException, InterruptedException {
+        // Base64 decode the result and use a keystore to parse the key/cert
+        byte[] bytes = DatatypeConverter.parseBase64Binary(secret);
+        KeyStore ks = KeyStore.getInstance(PKCS12);
+        ks.load(new ByteArrayInputStream(bytes), EMPTY_CHAR_ARRAY);
+
+        // Extract the key(s) and cert(s) and save them in a *second* keystore
+        // because the first keystore yields a corrupted PFX when written to disk
+        KeyStore ks2 = KeyStore.getInstance(PKCS12);
+        ks2.load(null, null);
+
+        for (Enumeration<String> e = ks.aliases(); e.hasMoreElements(); ) {
+            String alias = e.nextElement();
+            Certificate[] chain = ks.getCertificateChain(alias);
+            Key privateKey = ks.getKey(alias, EMPTY_CHAR_ARRAY);
+            ks2.setKeyEntry(alias, privateKey, EMPTY_CHAR_ARRAY, chain);
+        }
+
+        // Write PFX to disk on executor, which may be a separate physical system
+        FilePath outFile = workspace.createTempFile("keyvault-", ".pfx");
+        try (OutputStream outFileStream = outFile.write()) {
+            ks2.store(outFileStream, EMPTY_CHAR_ARRAY);
+        }
+
+        URI uri = outFile.toURI();
+        return uri.getPath();
     }
 }

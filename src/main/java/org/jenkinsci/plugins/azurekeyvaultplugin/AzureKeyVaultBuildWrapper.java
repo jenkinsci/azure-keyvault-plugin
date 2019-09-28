@@ -42,19 +42,11 @@ import hudson.security.ACL;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
-import java.io.ByteArrayInputStream;
-import java.io.OutputStream;
-import java.net.URI;
-import java.security.Key;
-import java.security.KeyStore;
-import java.security.cert.Certificate;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.logging.Logger;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.xml.bind.DatatypeConverter;
 import jenkins.tasks.SimpleBuildWrapper;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
@@ -62,6 +54,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
+import static hudson.Util.fixEmpty;
 import static java.lang.String.format;
 import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getCredentialById;
 
@@ -70,7 +63,6 @@ import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialR
  */
 public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
-    private static final char[] emptyCharArray = new char[0];
     private static final Logger LOGGER = Logger.getLogger("Jenkins.AzureKeyVaultBuildWrapper");
 
     private final List<AzureKeyVaultSecret> azureKeyVaultSecrets;
@@ -94,7 +86,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     @DataBoundSetter
     public void setKeyVaultURLOverride(String keyVaultURL) {
-        this.keyVaultURL = keyVaultURL;
+        this.keyVaultURL = fixEmpty(keyVaultURL);
     }
 
     // Override KeyVault Application ID
@@ -104,7 +96,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     @DataBoundSetter
     public void setApplicationIDOverride(String applicationID) {
-        this.applicationID = applicationID;
+        this.applicationID = fixEmpty(applicationID);
     }
 
     // Override Application Secret
@@ -114,7 +106,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     @DataBoundSetter
     public void setApplicationSecretOverride(String applicationSecret) {
-        this.applicationSecret = applicationSecret;
+        this.applicationSecret = fixEmpty(applicationSecret);
     }
 
     // Override Application Secret ID
@@ -124,7 +116,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     @DataBoundSetter
     public void setCredentialIDOverride(String credentialID) {
-        this.credentialID = credentialID;
+        this.credentialID = fixEmpty(credentialID);
     }
 
     // Get the default value only if it is not overridden for this build
@@ -251,32 +243,8 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
                 SecretBundle bundle = getSecret(client, secret);
                 if (bundle != null) {
                     try {
-                        // Base64 decode the result and use a keystore to parse the key/cert
-                        byte[] bytes = DatatypeConverter.parseBase64Binary(bundle.value());
-                        KeyStore ks = KeyStore.getInstance("PKCS12");
-                        ks.load(new ByteArrayInputStream(bytes), emptyCharArray);
-
-                        // Extract the key(s) and cert(s) and save them in a *second* keystore
-                        // because the first keystore yields a corrupted PFX when written to disk
-                        KeyStore ks2 = KeyStore.getInstance("PKCS12");
-                        ks2.load(null, null);
-
-                        for (Enumeration<String> e = ks.aliases(); e.hasMoreElements(); ) {
-                            String alias = e.nextElement();
-                            Certificate[] chain = ks.getCertificateChain(alias);
-                            Key privateKey = ks.getKey(alias, emptyCharArray);
-                            ks2.setKeyEntry(alias, privateKey, emptyCharArray, chain);
-                        }
-
-                        // Write PFX to disk on executor, which may be a separate physical system
-                        FilePath outFile = workspace.createTempFile("keyvault", "pfx");
-                        OutputStream outFileStream = outFile.write();
-                        ks2.store(outFileStream, emptyCharArray);
-                        outFileStream.close();
-                        URI uri = outFile.toURI();
-                        valuesToMask.add(uri.getPath());
-                        context.env(secret.getEnvVariable(), uri.getPath());
-
+                        String path = AzureKeyVaultUtil.convertAndWritePfxToDisk(workspace, bundle.value());
+                        context.env(secret.getEnvVariable(), path);
                     } catch (Exception e) {
                         throw new AzureKeyVaultException(e.getMessage(), e);
                     }

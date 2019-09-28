@@ -60,6 +60,10 @@ Note that the example echos below will only show *****'s as the plugin redacts s
 `withAzureKeyvault` build wrapper.
 
 #### Scripted
+Snippet generator is fully supported for generating the possible values (along with inline help):
+Go to any pipeline job and click `Pipeline Syntax`
+
+Or visit the URL: `/job/<job-name>/pipeline-syntax/`
 
 Simple version:
 ```groovy
@@ -105,6 +109,11 @@ node {
 ```
 
 #### Declarative
+Snippet generator is fully supported for generating the possible values (along with inline help):
+Go to any pipeline job and click `Pipeline Syntax` -> `Declarative Directive Generator`
+
+Or visit the URL: `/job/<job-name>/directive-generator/`
+
 
 Simple:
 ```groovy
@@ -125,10 +134,6 @@ pipeline {
 
 With overrides:
 ```groovy
-options {
-  azureKeyVault([[envVariable: 'MY_SECRET', name: 'my-secret', secretType: 'Secret']])
-}
-
 pipeline {
     agent any
     stages {
@@ -149,3 +154,23 @@ pipeline {
     }
 }
 ```
+
+Certificate:
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            options {
+              azureKeyVault([[envVariable: 'CERT_LOCATION', name: 'my-cert-name', secretType: 'Certificate']])
+            }
+            steps {
+                sh "openssl pkcs12 -in $CERT_LOCATION  -nodes -password 'pass:' -out keyvault.pem"
+            }
+        }
+    }
+}
+```
+
+The shell command above will convert the PFX file to a pem key file (also containing the cert), note that Azure Key Vault removes the password
+on the pfx when you import it, if you're importing it back into Azure somewhere else you may need to convert it to pem and convert back to a pfx with a password.
