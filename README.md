@@ -14,7 +14,6 @@ In the Jenkins **Configure System** page, configure the following three options 
 ### Via configuration as code
 
 This plugin supports being configured with [configuration as code](https://github.com/jenkinsci/configuration-as-code-plugin/)
-It requires both `configuration-as-code` and `configuration-as-code-support` plugins to be installed (support is required for credentials to be added)
 
 Example yaml:
 ```yaml
@@ -60,6 +59,7 @@ credentials:
 Note that the example echos below will only show *****'s as the plugin redacts secrets found in the build log inside the
 `withAzureKeyvault` build wrapper.
 
+#### Scripted
 
 Simple version:
 ```groovy
@@ -102,5 +102,50 @@ node {
         sh 'echo $MY_SECRET'
      }
 }
+```
 
+#### Declarative
+
+Simple:
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            options {
+              azureKeyVault([[envVariable: 'MY_SECRET', name: 'my-secret', secretType: 'Secret']])
+            }
+            steps {
+                sh "echo $SECRET"
+            }
+        }
+    }
+}
+```
+
+With overrides:
+```groovy
+options {
+  azureKeyVault([[envVariable: 'MY_SECRET', name: 'my-secret', secretType: 'Secret']])
+}
+
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            options {
+              azureKeyVault(
+                credentialID: 'my-sp', 
+                keyVaultURL: 'https://my.vault.azure.net', 
+                secrets: [
+                    [envVariable: 'MY_SECRET', name: 'my-secret', secretType: 'Secret']
+                ]
+              )
+            }
+            steps {
+                sh "echo $SECRET"
+            }
+        }
+    }
+}
 ```
