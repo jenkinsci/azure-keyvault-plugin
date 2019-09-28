@@ -14,7 +14,6 @@ In the Jenkins **Configure System** page, configure the following three options 
 ### Via configuration as code
 
 This plugin supports being configured with [configuration as code](https://github.com/jenkinsci/configuration-as-code-plugin/)
-It requires both `configuration-as-code` and `configuration-as-code-support` plugins to be installed (support is required for credentials to be added)
 
 Example yaml:
 ```yaml
@@ -60,6 +59,11 @@ credentials:
 Note that the example echos below will only show *****'s as the plugin redacts secrets found in the build log inside the
 `withAzureKeyvault` build wrapper.
 
+#### Scripted
+Snippet generator is fully supported for generating the possible values (along with inline help):
+Go to any pipeline job and click `Pipeline Syntax`
+
+Or visit the URL: `/job/<job-name>/pipeline-syntax/`
 
 Simple version:
 ```groovy
@@ -102,5 +106,71 @@ node {
         sh 'echo $MY_SECRET'
      }
 }
-
 ```
+
+#### Declarative
+Snippet generator is fully supported for generating the possible values (along with inline help):
+Go to any pipeline job and click `Pipeline Syntax` -> `Declarative Directive Generator`
+
+Or visit the URL: `/job/<job-name>/directive-generator/`
+
+
+Simple:
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            options {
+              azureKeyVault([[envVariable: 'MY_SECRET', name: 'my-secret', secretType: 'Secret']])
+            }
+            steps {
+                sh "echo $SECRET"
+            }
+        }
+    }
+}
+```
+
+With overrides:
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            options {
+              azureKeyVault(
+                credentialID: 'my-sp', 
+                keyVaultURL: 'https://my.vault.azure.net', 
+                secrets: [
+                    [envVariable: 'MY_SECRET', name: 'my-secret', secretType: 'Secret']
+                ]
+              )
+            }
+            steps {
+                sh "echo $SECRET"
+            }
+        }
+    }
+}
+```
+
+Certificate:
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            options {
+              azureKeyVault([[envVariable: 'CERT_LOCATION', name: 'my-cert-name', secretType: 'Certificate']])
+            }
+            steps {
+                sh "openssl pkcs12 -in $CERT_LOCATION  -nodes -password 'pass:' -out keyvault.pem"
+            }
+        }
+    }
+}
+```
+
+The shell command above will convert the PFX file to a pem key file (also containing the cert), note that Azure Key Vault removes the password
+on the pfx when you import it, if you're importing it back into Azure somewhere else you may need to convert it to pem and convert back to a pfx with a password.

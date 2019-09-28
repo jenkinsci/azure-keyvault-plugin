@@ -7,6 +7,7 @@ import com.microsoft.azure.keyvault.KeyVaultClient;
 import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.microsoft.azure.util.AzureCredentials;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Util;
 import hudson.console.ConsoleLogFilter;
 import hudson.model.Item;
@@ -38,6 +39,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getCredentialById;
 
 public class AzureKeyVaultStep extends Step {
@@ -174,7 +176,24 @@ public class AzureKeyVaultStep extends Step {
                         );
                     }
                 } else if (secret.isCertificate()) {
-                    throw new AzureKeyVaultException("Certificate is not currently supported in the azureKeyVault step, use the `withAzureKeyvault` build wrapper");
+                    SecretBundle bundle = getSecret(client, keyVaultURL, secret);
+                    if (bundle != null) {
+                        try {
+                            FilePath filePath = requireNonNull(getContext().get(FilePath.class));
+                            String path = AzureKeyVaultUtil.convertAndWritePfxToDisk(filePath, bundle.value());
+                            secrets.put(secret.getEnvVariable(), path);
+                        } catch (Exception e) {
+                            throw new AzureKeyVaultException(e.getMessage(), e);
+                        }
+                    } else {
+                        throw new AzureKeyVaultException(
+                                format(
+                                        "Certificate: %s not found in vault: %s",
+                                        secret.getName(),
+                                        keyVaultURL
+                                )
+                        );
+                    }
                 }
             }
             return secrets;
