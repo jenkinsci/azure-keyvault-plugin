@@ -65,6 +65,9 @@ class AzureKeyVaultUtil {
             ks2.setKeyEntry(alias, privateKey, EMPTY_CHAR_ARRAY, chain);
         }
 
+        // ensure workspace has been created
+        workspace.mkdirs();
+
         // Write PFX to disk on executor, which may be a separate physical system
         FilePath outFile = workspace.createTempFile("keyvault-", ".pfx");
         try (OutputStream outFileStream = outFile.write()) {
