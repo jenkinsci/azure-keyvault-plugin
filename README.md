@@ -1,4 +1,10 @@
 # Azure Key Vault Plugin
+
+[![Build Status][jenkins-status]][jenkins-builds]
+[![Jenkins Plugin][plugin-version-badge]][plugin]
+[![GitHub release][github-release-badge]][github-release]
+[![Jenkins Plugin Installs][plugin-install-badge]][plugin]
+
 This plugin enables Jenkins to fetch secrets from Azure Keyvault and inject them directly into build jobs.
 This works similarly to the [Credential Binding Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Binding+Plugin) and borrows much from the [Hashicorp Vault Plugin](https://wiki.jenkins-ci.org/display/JENKINS/HashiCorp+Vault+Plugin).
 The plugin acts as an Azure Active Directory Application and must be configured with an Application ID and Token. Additional details [here](https://docs.microsoft.com/en-us/azure/app-service-mobile/app-service-mobile-how-to-configure-active-directory-authentication#optional-configure-a-native-client-application).
@@ -174,3 +180,12 @@ pipeline {
 
 The shell command above will convert the PFX file to a pem key file (also containing the cert), note that Azure Key Vault removes the password
 on the pfx when you import it, if you're importing it back into Azure somewhere else you may need to convert it to pem and convert back to a pfx with a password.
+
+
+[jenkins-builds]: https://ci.jenkins.io/job/Plugins/job/azure-keyvault-plugin/job/master/
+[jenkins-status]: https://ci.jenkins.io/buildStatus/icon?job=Plugins/azure-keyvault-plugin/master
+[plugin-version-badge]: https://img.shields.io/jenkins/plugin/v/azure-keyvault.svg
+[plugin-install-badge]: https://img.shields.io/jenkins/plugin/i/azure-keyvault.svg?color=blue
+[plugin]: https://plugins.jenkins.io/azure-keyvault
+[github-release-badge]: https://img.shields.io/github/release/jenkinsci/azure-keyvault-plugin.svg?label=release
+[github-release]: https://github.com/jenkinsci/azure-keyvault-plugin/releases/latest
