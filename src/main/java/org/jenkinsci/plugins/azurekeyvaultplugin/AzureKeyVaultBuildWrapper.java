@@ -27,6 +27,7 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.microsoft.azure.keyvault.KeyVaultClient;
+import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.microsoft.azure.util.AzureCredentials;
 import hudson.EnvVars;
@@ -139,12 +140,16 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     }
 
 
-    public AzureKeyVaultCredential getKeyVaultCredential(Run<?, ?> build) {
+    public KeyVaultCredentials getKeyVaultCredential(Run<?, ?> build) {
         // Try override values
         LOGGER.fine("Trying override credentials...");
-        AzureKeyVaultCredential credential = getKeyVaultCredential(build, this.applicationSecret, this.credentialID);
-        if (credential.isValid()) {
+        KeyVaultCredentials credential = getKeyVaultCredential(build, this.applicationSecret, this.credentialID);
+        if (credential instanceof AzureKeyVaultCredential && ((AzureKeyVaultCredential)credential).isValid()) {
             LOGGER.fine("Using override credentials");
+            return credential;
+        }
+
+        if (credential instanceof AzureKeyVaultImdsCredential) {
             return credential;
         }
 
@@ -155,14 +160,18 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
                 null,
                 AzureKeyVaultGlobalConfiguration.get().getCredentialID()
         );
-        if (credential.isValid()) {
+        if (credential instanceof AzureKeyVaultCredential && ((AzureKeyVaultCredential)credential).isValid()) {
             LOGGER.fine("Using global credentials");
+            return credential;
+        }
+
+        if (credential instanceof AzureKeyVaultImdsCredential) {
             return credential;
         }
         throw new AzureKeyVaultException("Unable to find a valid credential with provided parameters");
     }
 
-    public AzureKeyVaultCredential getKeyVaultCredential(Run<?, ?> build, String applicationSecret, String credentialID) {
+    public KeyVaultCredentials getKeyVaultCredential(Run<?, ?> build, String applicationSecret, String credentialID) {
         if (StringUtils.isNotEmpty(credentialID)) {
             LOGGER.fine("Fetching credentials by ID");
             return getCredentialById(credentialID, build);
@@ -219,7 +228,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             return;
         }
 
-        AzureKeyVaultCredential creds = getKeyVaultCredential(build);
+        KeyVaultCredentials creds = getKeyVaultCredential(build);
         KeyVaultClient client = new KeyVaultClient(creds);
 
         String keyVaultURL = getKeyVaultURL();

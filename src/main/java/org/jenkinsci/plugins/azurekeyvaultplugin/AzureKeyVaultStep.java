@@ -4,6 +4,7 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.azure.keyvault.KeyVaultClient;
+import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.microsoft.azure.util.AzureCredentials;
 import hudson.Extension;
@@ -90,7 +91,7 @@ public class AzureKeyVaultStep extends Step {
         }
 
         Run run = context.get(Run.class);
-        AzureKeyVaultCredential credential = getCredentialById(resolvedCredentialId, run);
+        KeyVaultCredentials credential = getCredentialById(resolvedCredentialId, run);
 
         return new ExecutionImpl(context, resolvedKeyVaultUrl, credential, secrets);
     }
@@ -101,13 +102,13 @@ public class AzureKeyVaultStep extends Step {
     private static class ExecutionImpl extends AbstractStepExecutionImpl {
 
         private final String keyVaultURL;
-        private final AzureKeyVaultCredential credential;
+        private final KeyVaultCredentials credential;
         private final List<AzureKeyVaultSecret> azureKeyVaultSecrets;
 
         ExecutionImpl(
                 StepContext context,
                 String keyVaultURL,
-                AzureKeyVaultCredential credential,
+                KeyVaultCredentials credential,
                 List<AzureKeyVaultSecret> azureKeyVaultSecrets
         ) {
             super(context);
@@ -153,7 +154,7 @@ public class AzureKeyVaultStep extends Step {
             }
         }
 
-        private Map<String, String> getSecretsMap(AzureKeyVaultCredential credential, String keyVaultURL, List<AzureKeyVaultSecret> azureKeyVaultSecrets) {
+        private Map<String, String> getSecretsMap(KeyVaultCredentials credential, String keyVaultURL, List<AzureKeyVaultSecret> azureKeyVaultSecrets) {
             if (azureKeyVaultSecrets == null || azureKeyVaultSecrets.isEmpty()) {
                 return Collections.emptyMap();
             }
