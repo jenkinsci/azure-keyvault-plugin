@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Item;
@@ -55,7 +56,8 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         return new StandardListBoxModel()
                 .includeEmptyValue()
                 .includeAs(ACL.SYSTEM, context, StandardUsernamePasswordCredentials.class)
-                .includeAs(ACL.SYSTEM, context, AzureCredentials.class);
+                .includeAs(ACL.SYSTEM, context, AzureCredentials.class)
+                .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class);
     }
 
     public static AzureKeyVaultGlobalConfiguration get() {

@@ -3,7 +3,9 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.model.Run;
 import hudson.util.Secret;
 import java.util.logging.Level;
@@ -15,7 +17,7 @@ public class AzureKeyVaultCredentialRetriever {
     private static final Logger LOGGER = Logger.getLogger(AzureKeyVaultStep.class.getName());
 
 
-    public static AzureKeyVaultCredential getCredentialById(String credentialID, Run<?, ?> build) {
+    public static KeyVaultCredentials getCredentialById(String credentialID, Run<?, ?> build) {
         AzureKeyVaultCredential credential;
         IdCredentials cred = CredentialsProvider.findCredentialById(credentialID, IdCredentials.class, build);
 
@@ -41,6 +43,8 @@ public class AzureKeyVaultCredentialRetriever {
                     azureCredentials.getClientId(),
                     Secret.fromString(azureCredentials.getPlainClientSecret())
             );
+        } else if (cred instanceof AzureImdsCredentials) {
+            return new AzureKeyVaultImdsCredential();
         } else {
             throw new AzureKeyVaultException("Could not determine the type for Secret id "
                     + credentialID +
