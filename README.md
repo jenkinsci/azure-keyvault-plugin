@@ -60,7 +60,7 @@ credentials:
 ## Building the Plugin
 * Run **mvn package**, an .hpi file will be generated in the target folder.
 
-# Plugin Usage
+## Plugin Usage
 ### Usage in Jenkinsfile
 Note that the example echos below will only show *****'s as the plugin redacts secrets found in the build log inside the
 `withAzureKeyvault` build wrapper.
