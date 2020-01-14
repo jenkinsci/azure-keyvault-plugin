@@ -5,13 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import com.microsoft.jenkins.azurecommons.core.credentials.AbstractTokenCredentials;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Objects;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 
-public class AzureKeyVaultImdsCredential extends KeyVaultCredentials {
+public class AzureKeyVaultImdsCredential extends KeyVaultCredentials implements Serializable {
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
