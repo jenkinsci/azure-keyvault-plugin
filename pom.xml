@@ -258,6 +258,16 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.jenkins-ci.tools</groupId>
+        <artifactId>maven-hpi-plugin</artifactId>
+        <configuration>
+          <minimumJavaVersion>1.8</minimumJavaVersion>
+          <maskClasses>
+              com.microsoft.azure.keyvault.
+          </maskClasses>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
