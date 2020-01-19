@@ -78,7 +78,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         PagedList<SecretItem> secretItems = client.getSecrets(keyVaultURL);
         for (SecretItem secretItem : secretItems) {
                 SecretBundle secret = client.getSecret(secretItem.id());
-                IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, secretItem.id(), "", secret.id(),
+                IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, secretItem.id(), "", "",
                         secret.secretIdentifier().identifier());
                 credentials.add(cred);
         }
@@ -86,7 +86,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         for (CertificateItem certificateItem : certificateItems) {
             CertificateBundle certificate = client.getCertificate(certificateItem.id());
             IdCredentials cred = new SecretCertificateCredentials(CredentialsScope.GLOBAL, certificateItem.id(), "",
-                    certificate.id(),
+                    "",
                     certificate.secretIdentifier().identifier(), Secret.decrypt(""));
             credentials.add(cred);
         }
