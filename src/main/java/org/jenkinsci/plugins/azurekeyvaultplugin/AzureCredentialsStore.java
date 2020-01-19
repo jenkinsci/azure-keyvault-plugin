@@ -10,7 +10,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.model.ModelObject;
 import hudson.security.ACL;
 import hudson.security.Permission;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import jenkins.model.Jenkins;
@@ -53,19 +52,22 @@ public class AzureCredentialsStore extends CredentialsStore {
     }
 
     @Override
-    public boolean addCredentials(@NonNull Domain domain, @NonNull Credentials credentials) throws IOException {
-        return false;
+    public boolean addCredentials(@NonNull Domain domain, @NonNull Credentials credentials) {
+        throw new UnsupportedOperationException(
+                "Jenkins may not add credentials to Azure Key Vault");
     }
 
     @Override
-    public boolean removeCredentials(@NonNull Domain domain, @NonNull Credentials credentials) throws IOException {
-        return false;
+    public boolean removeCredentials(@NonNull Domain domain, @NonNull Credentials credentials) {
+        throw new UnsupportedOperationException(
+                "Jenkins may not remove credentials to Azure Key Vault");
     }
 
     @Override
     public boolean updateCredentials(@NonNull Domain domain, @NonNull Credentials credentials,
-                                     @NonNull Credentials credentials1) throws IOException {
-        return false;
+                                     @NonNull Credentials credentials1) {
+        throw new UnsupportedOperationException(
+                "Jenkins may not update credentials to Azure Key Vault");
     }
 
     @Nullable

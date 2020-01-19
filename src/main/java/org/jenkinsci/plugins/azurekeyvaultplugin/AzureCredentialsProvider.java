@@ -7,10 +7,9 @@ import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.google.common.base.Suppliers;
 import com.microsoft.azure.PagedList;
-import com.microsoft.azure.keyvault.CertificateIdentifier;
 import com.microsoft.azure.keyvault.KeyVaultClient;
-import com.microsoft.azure.keyvault.SecretIdentifier;
 import com.microsoft.azure.keyvault.models.CertificateBundle;
+import com.microsoft.azure.keyvault.models.CertificateItem;
 import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.microsoft.azure.keyvault.models.SecretItem;
 import com.microsoft.jenkins.keyvault.SecretCertificateCredentials;
@@ -69,27 +68,27 @@ public class AzureCredentialsProvider extends CredentialsProvider {
     }
 
     private static Collection<IdCredentials> fetchCredentials() {
-        KeyVaultClient client = new KeyVaultClient(new AzureKeyVaultImdsCredential());
         AzureKeyVaultGlobalConfiguration azureKeyVaultGlobalConfiguration = GlobalConfiguration.all().get(AzureKeyVaultGlobalConfiguration.class);
+        if (azureKeyVaultGlobalConfiguration == null) {
+            throw new AzureKeyVaultException("No global key vault url configured.");
+        }
+        KeyVaultClient client = new KeyVaultClient(new AzureKeyVaultImdsCredential());
         String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
-        PagedList<SecretItem> secrets = client.getSecrets(keyVaultURL);
         List<IdCredentials> credentials = new ArrayList<>();
-        for (SecretItem secretItem : secrets) {
-            if(SecretIdentifier.isSecretIdentifier(secretItem.id())){
+        PagedList<SecretItem> secretItems = client.getSecrets(keyVaultURL);
+        for (SecretItem secretItem : secretItems) {
                 SecretBundle secret = client.getSecret(secretItem.id());
                 IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, secretItem.id(), "", secret.id(),
-                        secret.secretIdentifier().toString());
+                        secret.secretIdentifier().identifier());
                 credentials.add(cred);
-            } else if (CertificateIdentifier.isCertificateIdentifier(secretItem.id())) {
-                CertificateBundle certificate = client.getCertificate(secretItem.id());
-
-                IdCredentials cred = new SecretCertificateCredentials(CredentialsScope.GLOBAL, secretItem.id(), "",
-                        certificate.id(),
-                        certificate.secretIdentifier().toString(), Secret.decrypt(""));
-                credentials.add(cred);
-            } else {
-                LOG.info("Unsupported key vault type");
-            }
+        }
+        PagedList<CertificateItem> certificateItems = client.getCertificates(keyVaultURL);
+        for (CertificateItem certificateItem : certificateItems) {
+            CertificateBundle certificate = client.getCertificate(certificateItem.id());
+            IdCredentials cred = new SecretCertificateCredentials(CredentialsScope.GLOBAL, certificateItem.id(), "",
+                    certificate.id(),
+                    certificate.secretIdentifier().identifier(), Secret.decrypt(""));
+            credentials.add(cred);
         }
         return credentials;
     }
