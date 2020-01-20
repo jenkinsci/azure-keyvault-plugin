@@ -8,6 +8,7 @@ import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.google.common.base.Suppliers;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.keyvault.KeyVaultClient;
+import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import com.microsoft.azure.keyvault.models.CertificateBundle;
 import com.microsoft.azure.keyvault.models.CertificateItem;
 import com.microsoft.azure.keyvault.models.SecretBundle;
@@ -72,15 +73,18 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         if (azureKeyVaultGlobalConfiguration == null) {
             throw new AzureKeyVaultException("No global key vault url configured.");
         }
-        KeyVaultClient client = new KeyVaultClient(new AzureKeyVaultImdsCredential());
+
+        String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
+        KeyVaultCredentials keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
+        KeyVaultClient client = new KeyVaultClient(keyVaultCredentials);
         String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
         List<IdCredentials> credentials = new ArrayList<>();
         PagedList<SecretItem> secretItems = client.getSecrets(keyVaultURL);
         for (SecretItem secretItem : secretItems) {
-                SecretBundle secret = client.getSecret(secretItem.id());
-                IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, secretItem.id(), "", "",
-                        secret.secretIdentifier().identifier());
-                credentials.add(cred);
+            SecretBundle secret = client.getSecret(secretItem.id());
+            IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, secretItem.id(), "", "",
+                    secret.secretIdentifier().identifier());
+            credentials.add(cred);
         }
         PagedList<CertificateItem> certificateItems = client.getCertificates(keyVaultURL);
         for (CertificateItem certificateItem : certificateItems) {
