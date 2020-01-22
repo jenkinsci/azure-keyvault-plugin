@@ -33,7 +33,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
+import okhttp3.OkHttpClient;
 import org.acegisecurity.Authentication;
+import org.apache.commons.lang3.StringUtils;
 
 
 @Extension
@@ -53,6 +55,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
     @Override
     public <C extends Credentials> List<C> getCredentials(@NonNull Class<C> aClass, @Nullable ItemGroup itemGroup,
                                                           @Nullable Authentication authentication) {
+        Logger.getLogger(OkHttpClient.class.getName()).setLevel(Level.FINE);
         if (ACL.SYSTEM.equals(authentication)) {
             final ArrayList<C> list = new ArrayList<>();
             for (IdCredentials credential : credentialsSupplier.get()) {
@@ -66,6 +69,27 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         }
 
         return Collections.emptyList();
+    }
+
+    private static String getKeyvaultItemName(String itemId) {
+        if (StringUtils.isEmpty(itemId)) {
+            throw new AzureKeyVaultException("Empty id for key vault item.");
+        }
+        int count = 0;
+        int index = -1;
+        for (int i = itemId.length() - 1; i >= 0; i--) {
+            if (itemId.charAt(i) == '/') {
+                count++;
+            }
+            if (count == 2) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) {
+            throw new AzureKeyVaultException("Wrong pattern for key vault item id.");
+        }
+        return itemId.substring(index + 1);
     }
 
     private static Collection<IdCredentials> fetchCredentials() {
@@ -82,14 +106,16 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         PagedList<SecretItem> secretItems = client.getSecrets(keyVaultURL);
         for (SecretItem secretItem : secretItems) {
             SecretBundle secret = client.getSecret(secretItem.id());
-            IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, secretItem.id(), "", "",
+            String id = secretItem.id();
+            IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, getKeyvaultItemName(id), id, "",
                     secret.secretIdentifier().identifier());
             credentials.add(cred);
         }
         PagedList<CertificateItem> certificateItems = client.getCertificates(keyVaultURL);
         for (CertificateItem certificateItem : certificateItems) {
             CertificateBundle certificate = client.getCertificate(certificateItem.id());
-            IdCredentials cred = new SecretCertificateCredentials(CredentialsScope.GLOBAL, certificateItem.id(), "",
+            String id = certificateItem.id();
+            IdCredentials cred = new SecretCertificateCredentials(CredentialsScope.GLOBAL, getKeyvaultItemName(id), id,
                     "",
                     certificate.secretIdentifier().identifier(), Secret.decrypt(""));
             credentials.add(cred);
