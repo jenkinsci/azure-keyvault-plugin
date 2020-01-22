@@ -94,6 +94,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     certificate.secretIdentifier().identifier(), Secret.decrypt(""));
             credentials.add(cred);
         }
+        client.httpClient().connectionPool().evictAll();
         return credentials;
     }
 
