@@ -53,6 +53,6 @@ div() {
     }
     text(_("Credentials will be available in: "))
     ul(){
-        li(_("Global scoped credentials be available to all items within Jenkins"))
+        li(_("Global scoped credentials will be available to all items within Jenkins"))
     }
 }
