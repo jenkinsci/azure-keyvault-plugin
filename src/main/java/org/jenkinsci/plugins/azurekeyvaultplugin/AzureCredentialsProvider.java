@@ -71,7 +71,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         return Collections.emptyList();
     }
 
-    private static String getKeyvaultItemName(String itemId) {
+    private static String generateKeyvaultItemName(String itemId) {
         if (StringUtils.isEmpty(itemId)) {
             throw new AzureKeyVaultException("Empty id for key vault item.");
         }
@@ -107,7 +107,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         for (SecretItem secretItem : secretItems) {
             SecretBundle secret = client.getSecret(secretItem.id());
             String id = secretItem.id();
-            IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, getKeyvaultItemName(id), id, "",
+            IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, generateKeyvaultItemName(id), id, "",
                     secret.secretIdentifier().identifier());
             credentials.add(cred);
         }
@@ -115,7 +115,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         for (CertificateItem certificateItem : certificateItems) {
             CertificateBundle certificate = client.getCertificate(certificateItem.id());
             String id = certificateItem.id();
-            IdCredentials cred = new SecretCertificateCredentials(CredentialsScope.GLOBAL, getKeyvaultItemName(id), id,
+            IdCredentials cred = new SecretCertificateCredentials(CredentialsScope.GLOBAL, generateKeyvaultItemName(id), id,
                     "",
                     certificate.secretIdentifier().identifier(), Secret.decrypt(""));
             credentials.add(cred);
