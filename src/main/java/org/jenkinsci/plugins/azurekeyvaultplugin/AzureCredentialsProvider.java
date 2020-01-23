@@ -5,6 +5,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Suppliers;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.keyvault.KeyVaultClient;
@@ -71,7 +72,8 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         return Collections.emptyList();
     }
 
-    private static String generateKeyvaultItemName(String itemId) {
+    @VisibleForTesting
+    static String generateKeyvaultItemName(String itemId) {
         if (StringUtils.isEmpty(itemId)) {
             throw new AzureKeyVaultException("Empty id for key vault item.");
         }
@@ -107,7 +109,8 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         for (SecretItem secretItem : secretItems) {
             SecretBundle secret = client.getSecret(secretItem.id());
             String id = secretItem.id();
-            IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, generateKeyvaultItemName(id), id, "",
+            IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, generateKeyvaultItemName(id),
+                    id, credentialID,
                     secret.secretIdentifier().identifier());
             credentials.add(cred);
         }
@@ -116,7 +119,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             CertificateBundle certificate = client.getCertificate(certificateItem.id());
             String id = certificateItem.id();
             IdCredentials cred = new SecretCertificateCredentials(CredentialsScope.GLOBAL, generateKeyvaultItemName(id), id,
-                    "",
+                    credentialID,
                     certificate.secretIdentifier().identifier(), Secret.decrypt(""));
             credentials.add(cred);
         }
