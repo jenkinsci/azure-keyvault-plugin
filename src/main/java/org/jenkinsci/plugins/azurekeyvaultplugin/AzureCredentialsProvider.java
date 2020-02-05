@@ -10,9 +10,7 @@ import com.google.common.base.Suppliers;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.keyvault.KeyVaultClient;
 import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
-import com.microsoft.azure.keyvault.models.CertificateBundle;
 import com.microsoft.azure.keyvault.models.CertificateItem;
-import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.microsoft.azure.keyvault.models.SecretItem;
 import com.microsoft.jenkins.keyvault.SecretCertificateCredentials;
 import com.microsoft.jenkins.keyvault.SecretStringCredentials;
@@ -107,20 +105,18 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         List<IdCredentials> credentials = new ArrayList<>();
         PagedList<SecretItem> secretItems = client.getSecrets(keyVaultURL);
         for (SecretItem secretItem : secretItems) {
-            SecretBundle secret = client.getSecret(secretItem.id());
             String id = secretItem.id();
             IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, generateKeyvaultItemName(id),
                     id, credentialID,
-                    secret.secretIdentifier().identifier());
+                    secretItem.id());
             credentials.add(cred);
         }
         PagedList<CertificateItem> certificateItems = client.getCertificates(keyVaultURL);
         for (CertificateItem certificateItem : certificateItems) {
-            CertificateBundle certificate = client.getCertificate(certificateItem.id());
             String id = certificateItem.id();
             IdCredentials cred = new SecretCertificateCredentials(CredentialsScope.GLOBAL, generateKeyvaultItemName(id), id,
                     credentialID,
-                    certificate.secretIdentifier().identifier(), Secret.decrypt(""));
+                    certificateItem.id(), Secret.decrypt(""));
             credentials.add(cred);
         }
         client.httpClient().connectionPool().evictAll();
