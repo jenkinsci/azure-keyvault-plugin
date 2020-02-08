@@ -38,11 +38,8 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     }
 
     private void refresh() {
-        ExtensionList<AzureCredentialsProvider> extensionList = Jenkins.get().getExtensionList(AzureCredentialsProvider.class);
-        if (extensionList != null && extensionList.size() > 0) {
-            AzureCredentialsProvider azureCredentialsProvider = extensionList.get(0);
-            azureCredentialsProvider.refreshCredentials();
-        }
+        AzureCredentialsProvider azureCredentialsProvider = ExtensionList.lookupSingleton(AzureCredentialsProvider.class);
+        azureCredentialsProvider.refreshCredentials();
     }
 
     public String getCredentialID() {
