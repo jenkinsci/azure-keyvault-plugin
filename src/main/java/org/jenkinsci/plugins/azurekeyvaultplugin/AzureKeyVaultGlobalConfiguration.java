@@ -34,6 +34,15 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     public void setKeyVaultURL(String keyVaultURL) {
         this.keyVaultURL = keyVaultURL;
         save();
+        refresh();
+    }
+
+    private void refresh() {
+        ExtensionList<AzureCredentialsProvider> extensionList = Jenkins.get().getExtensionList(AzureCredentialsProvider.class);
+        if (extensionList != null && extensionList.size() > 0) {
+            AzureCredentialsProvider azureCredentialsProvider = extensionList.get(0);
+            azureCredentialsProvider.refreshCredentials();
+        }
     }
 
     public String getCredentialID() {
@@ -44,6 +53,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     public void setCredentialID(String credentialID) {
         this.credentialID = credentialID;
         save();
+        refresh();
     }
 
     @SuppressWarnings("unused")

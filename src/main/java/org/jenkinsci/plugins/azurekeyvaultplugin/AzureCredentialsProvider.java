@@ -40,11 +40,16 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
     private final AzureCredentialsStore store = new AzureCredentialsStore(this);
 
-    private final Supplier<Collection<IdCredentials>> credentialsSupplier =
+    private Supplier<Collection<IdCredentials>> credentialsSupplier =
             memoizeWithExpiration(AzureCredentialsProvider::fetchCredentials, Duration.ofMinutes(5));
 
     private static <T> Supplier<T> memoizeWithExpiration(Supplier<T> base, Duration duration) {
         return Suppliers.memoizeWithExpiration(base::get, duration.toMillis(), TimeUnit.MILLISECONDS)::get;
+    }
+
+    public void refreshCredentials() {
+        credentialsSupplier =
+                memoizeWithExpiration(AzureCredentialsProvider::fetchCredentials, Duration.ofMinutes(5));
     }
 
     @NonNull
