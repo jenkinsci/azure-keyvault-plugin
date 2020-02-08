@@ -6,7 +6,9 @@ import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainCredentials;
+import com.microsoft.azure.keyvault.KeyVaultClient;
 import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
+import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.model.Run;
@@ -117,4 +119,22 @@ public class AzureKeyVaultCredentialRetriever {
         }
         return credential;
     }
+
+    static SecretBundle getSecretBundle(KeyVaultClient client, AzureKeyVaultSecret secret, String keyVaultURL) {
+        try {
+            if (StringUtils.isEmpty(secret.getVersion())) {
+                return client.getSecret(keyVaultURL, secret.getName());
+            }
+            return client.getSecret(keyVaultURL, secret.getName(), secret.getVersion());
+        } catch (Exception e) {
+            throw new AzureKeyVaultException(
+                    format(
+                            "Failed to retrieve secret %s from vault %s, error message: %s",
+                            secret.getName(),
+                            keyVaultURL,
+                            e.getMessage()
+                    ), e);
+        }
+    }
+
 }

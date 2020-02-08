@@ -58,6 +58,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 import static hudson.Util.fixEmpty;
 import static java.lang.String.format;
 import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getCredentialById;
+import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getSecretBundle;
 
 /**
  * Wraps a build with azure key vault secrets / certificates
@@ -209,20 +210,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
     private SecretBundle getSecret(KeyVaultClient client, AzureKeyVaultSecret secret) {
         String keyVaultURL = getKeyVaultURL();
-        try {
-            if (StringUtils.isEmpty(secret.getVersion())) {
-                return client.getSecret(keyVaultURL, secret.getName());
-            }
-            return client.getSecret(keyVaultURL, secret.getName(), secret.getVersion());
-        } catch (Exception e) {
-            throw new AzureKeyVaultException(
-                    format(
-                            "Failed to retrieve secret %s from vault %s, error message: %s",
-                            secret.getName(),
-                            keyVaultURL,
-                            e.getMessage()
-                    ), e);
-        }
+        return getSecretBundle(client, secret, keyVaultURL);
     }
 
     public void setUp(Context context, Run<?, ?> build, FilePath workspace,
