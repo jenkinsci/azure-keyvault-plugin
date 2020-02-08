@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.String.format;
 
@@ -64,6 +65,9 @@ public class AzureKeyVaultCredentialRetriever {
     }
 
     public static KeyVaultCredentials getCredentialById(String credentialID) {
+        if (StringUtils.isEmpty(credentialID)) {
+            return null;
+        }
         SystemCredentialsProvider systemCredentialsProvider = SystemCredentialsProvider.getInstance();
         List<AzureImdsCredentials> azureImdsCredentials =
                 DomainCredentials.getCredentials(systemCredentialsProvider.getDomainCredentialsMap(),

@@ -97,6 +97,10 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
         String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
         KeyVaultCredentials keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
+        if (keyVaultCredentials == null) {
+            return Collections.emptyList();
+        }
+
         KeyVaultClient client = new KeyVaultClient(keyVaultCredentials);
         String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
         List<IdCredentials> credentials = new ArrayList<>();
