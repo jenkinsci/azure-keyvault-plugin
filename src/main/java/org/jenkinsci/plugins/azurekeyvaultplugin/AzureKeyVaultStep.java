@@ -142,6 +142,9 @@ public class AzureKeyVaultStep extends Step {
 
         private SecretBundle getSecret(KeyVaultClient client, String keyVaultURL, AzureKeyVaultSecret secret) {
             try {
+                if (StringUtils.isEmpty(secret.getVersion())) {
+                    return client.getSecret(keyVaultURL, secret.getName());
+                }
                 return client.getSecret(keyVaultURL, secret.getName(), secret.getVersion());
             } catch (Exception e) {
                 throw new AzureKeyVaultException(

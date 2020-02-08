@@ -210,6 +210,9 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     private SecretBundle getSecret(KeyVaultClient client, AzureKeyVaultSecret secret) {
         String keyVaultURL = getKeyVaultURL();
         try {
+            if (StringUtils.isEmpty(secret.getVersion())) {
+                return client.getSecret(keyVaultURL, secret.getName());
+            }
             return client.getSecret(keyVaultURL, secret.getName(), secret.getVersion());
         } catch (Exception e) {
             throw new AzureKeyVaultException(
