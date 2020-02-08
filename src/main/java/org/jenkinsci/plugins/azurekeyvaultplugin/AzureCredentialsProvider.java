@@ -73,21 +73,11 @@ public class AzureCredentialsProvider extends CredentialsProvider {
     }
 
     @VisibleForTesting
-    static String generateKeyvaultItemName(String itemId) {
+    static String getSecretName(String itemId) {
         if (StringUtils.isEmpty(itemId)) {
             throw new AzureKeyVaultException("Empty id for key vault item.");
         }
-        int count = 0;
-        int index = -1;
-        for (int i = itemId.length() - 1; i >= 0; i--) {
-            if (itemId.charAt(i) == '/') {
-                count++;
-            }
-            if (count == 2) {
-                index = i;
-                break;
-            }
-        }
+        int index = itemId.lastIndexOf('/');
         if (index < 0) {
             throw new AzureKeyVaultException("Wrong pattern for key vault item id.");
         }
@@ -112,7 +102,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         PagedList<SecretItem> secretItems = client.getSecrets(keyVaultURL);
         for (SecretItem secretItem : secretItems) {
             String id = secretItem.id();
-            IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, generateKeyvaultItemName(id),
+            IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, getSecretName(id),
                     id, credentialID, id);
             credentials.add(cred);
         }

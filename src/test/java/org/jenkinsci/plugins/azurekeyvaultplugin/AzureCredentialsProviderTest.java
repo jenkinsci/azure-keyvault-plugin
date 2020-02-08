@@ -14,15 +14,15 @@ public class AzureCredentialsProviderTest {
     public void testGenerateKeyvaultItemName_wrong_pattern() throws Throwable {
         expectedException.expect(AzureKeyVaultException.class);
         expectedException.expectMessage("Wrong pattern for key vault item id.");
-        AzureCredentialsProvider.generateKeyvaultItemName("wrong/pattern");
+        AzureCredentialsProvider.getSecretName("pattern");
     }
 
     @Test
     public void testGenerateKeyvaultItemName() throws Throwable {
-        String secretItemName = AzureCredentialsProvider.generateKeyvaultItemName("https://myvault.vault.azure" +
+        String secretItemName = AzureCredentialsProvider.getSecretName("https://myvault.vault.azure" +
                 ".net/secrets/mysecret");
-        assertEquals("secrets/mysecret", secretItemName);
-        String certificateItemName = AzureCredentialsProvider.generateKeyvaultItemName("https://myvault.vault.azure.net/certificates/mycertificate");
-        assertEquals("certificates/mycertificate", certificateItemName);
+        assertEquals("mysecret", secretItemName);
+        String certificateItemName = AzureCredentialsProvider.getSecretName("https://myvault.vault.azure.net/certificates/mycertificate");
+        assertEquals("mycertificate", certificateItemName);
     }
 }
