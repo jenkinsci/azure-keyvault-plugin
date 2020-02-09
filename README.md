@@ -181,6 +181,41 @@ pipeline {
 The shell command above will convert the PFX file to a pem key file (also containing the cert), note that Azure Key Vault removes the password
 on the pfx when you import it, if you're importing it back into Azure somewhere else you may need to convert it to pem and convert back to a pfx with a password.
 
+### Azure Key Vault Credentials Provider (Beta)
+
+This plugin also enables the retrieval of Secrets directly from Azure Key Vault. After the configuration is set up, secrets from the key vault can 
+be viewed in the credentials page like this:
+
+![provider](./docs/image/provider.png)
+
+*Note* These credentials are read-only and metadata caching(5 minutes) which means newly created secrets may not be here immediately.
+
+Use these credentials just as other normal credentials in Jenkins.
+
+Declarative Pipeline:
+
+```groovy
+pipeline {
+    environment {
+        GITHUB_API_TOKEN = credentials('github-api-token')
+    }
+    stages {
+        stage('Foo') {
+            echo '$GITHUB_API_TOKEN'
+        }
+    }
+}
+```
+
+Scripted Pipeline:
+
+```groovy
+node {
+    withCredentials([string(credentialsId: 'github-api-token', variable: 'GITHUB_API_TOKEN')]) {
+        echo '$GITHUB_API_TOKEN'
+    }
+}
+```
 
 [jenkins-builds]: https://ci.jenkins.io/job/Plugins/job/azure-keyvault-plugin/job/master/
 [jenkins-status]: https://ci.jenkins.io/buildStatus/icon?job=Plugins/azure-keyvault-plugin/master
