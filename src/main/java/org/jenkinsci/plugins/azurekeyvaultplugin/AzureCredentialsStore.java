@@ -60,14 +60,14 @@ public class AzureCredentialsStore extends CredentialsStore {
     @Override
     public boolean removeCredentials(@NonNull Domain domain, @NonNull Credentials credentials) {
         throw new UnsupportedOperationException(
-                "Jenkins may not remove credentials to Azure Key Vault");
+                "Jenkins may not remove credentials in Azure Key Vault");
     }
 
     @Override
     public boolean updateCredentials(@NonNull Domain domain, @NonNull Credentials credentials,
                                      @NonNull Credentials credentials1) {
         throw new UnsupportedOperationException(
-                "Jenkins may not update credentials to Azure Key Vault");
+                "Jenkins may not update credentials in Azure Key Vault");
     }
 
     @Nullable
