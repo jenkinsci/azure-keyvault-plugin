@@ -42,6 +42,7 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getCredentialById;
+import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getSecretBundle;
 
 public class AzureKeyVaultStep extends Step {
 
@@ -141,17 +142,7 @@ public class AzureKeyVaultStep extends Step {
         }
 
         private SecretBundle getSecret(KeyVaultClient client, String keyVaultURL, AzureKeyVaultSecret secret) {
-            try {
-                return client.getSecret(keyVaultURL, secret.getName(), secret.getVersion());
-            } catch (Exception e) {
-                throw new AzureKeyVaultException(
-                        format(
-                                "Failed to retrieve secret %s from vault %s, error message: %s",
-                                secret.getName(),
-                                keyVaultURL,
-                                e.getMessage()
-                        ), e);
-            }
+            return getSecretBundle(client, secret, keyVaultURL);
         }
 
         private Map<String, String> getSecretsMap(KeyVaultCredentials credential, String keyVaultURL, List<AzureKeyVaultSecret> azureKeyVaultSecrets) {

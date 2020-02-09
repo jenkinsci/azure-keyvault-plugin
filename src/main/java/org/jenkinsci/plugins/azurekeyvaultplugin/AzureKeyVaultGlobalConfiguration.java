@@ -34,6 +34,12 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     public void setKeyVaultURL(String keyVaultURL) {
         this.keyVaultURL = keyVaultURL;
         save();
+        refresh();
+    }
+
+    private void refresh() {
+        AzureCredentialsProvider azureCredentialsProvider = ExtensionList.lookupSingleton(AzureCredentialsProvider.class);
+        azureCredentialsProvider.refreshCredentials();
     }
 
     public String getCredentialID() {
@@ -44,6 +50,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     public void setCredentialID(String credentialID) {
         this.credentialID = credentialID;
         save();
+        refresh();
     }
 
     @SuppressWarnings("unused")
