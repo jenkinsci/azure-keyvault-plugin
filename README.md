@@ -217,6 +217,30 @@ node {
 }
 ```
 
+### SecretSource
+
+The plugin allows JCasC to interpolate string secrets from Azure KeyVault.
+
+#### Example
+
+az cli:
+
+```bash
+az keyvault secret set --vault-name my-vault --name my-password --value password
+```
+
+JCasC:
+
+```yaml
+jenkins:
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+      - id: "foo"
+        password: "${my-password}"
+```
+
 [jenkins-builds]: https://ci.jenkins.io/job/Plugins/job/azure-keyvault-plugin/job/master/
 [jenkins-status]: https://ci.jenkins.io/buildStatus/icon?job=Plugins/azure-keyvault-plugin/master
 [plugin-version-badge]: https://img.shields.io/jenkins/plugin/v/azure-keyvault.svg

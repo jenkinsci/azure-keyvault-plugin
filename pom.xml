@@ -210,7 +210,7 @@
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
       <version>${jcasc.version}</version>
-      <scope>test</scope>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>io.jenkins.configuration-as-code</groupId>
