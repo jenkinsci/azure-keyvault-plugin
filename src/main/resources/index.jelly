@@ -1,4 +1,4 @@
 <?jelly escape-by-default='true'?>
 <div>
- Build wrapper for retrieving secrets from Azure Key Vault 
+ Azure Key Vault integration, provides a build wrapper, declarative pipeline step, credential provider and configuration-as-code integration.
 </div>
