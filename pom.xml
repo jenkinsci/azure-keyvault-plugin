@@ -22,7 +22,7 @@
   </properties>
 
   <name>Azure Key Vault Plugin</name>
-  <description>Build wrapper for retrieving secrets from Azure Key Vault</description>
+  <description>Azure Key Vault integration, provides a build wrapper, declarative pipeline step, credential provider and configuration-as-code integration.</description>
   <url>https://github.com/jenkinsci/azure-keyvault-plugin/</url>
 
   <licenses>
