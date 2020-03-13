@@ -10,7 +10,6 @@ import com.microsoft.azure.PagedList;
 import com.microsoft.azure.keyvault.KeyVaultClient;
 import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import com.microsoft.azure.keyvault.models.KeyVaultErrorException;
-import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.microsoft.azure.keyvault.models.SecretItem;
 import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentials;
