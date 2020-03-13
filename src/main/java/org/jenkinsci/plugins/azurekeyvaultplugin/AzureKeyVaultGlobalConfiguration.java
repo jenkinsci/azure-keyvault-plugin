@@ -1,14 +1,11 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.cloudbees.plugins.credentials.Credentials;
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
@@ -40,13 +37,11 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     }
 
     public String getKeyVaultURL() {
-        if (StringUtils.isEmpty(this.keyVaultURL)) {
-            resolveKeyVaultUrlFromEnvironment()
-                    .ifPresent(url -> {
-                        this.keyVaultURL = url;
-                        save();
-                    });
-        }
+        resolveKeyVaultUrlFromEnvironment()
+                .ifPresent(url -> {
+                    this.keyVaultURL = url;
+                    save();
+                });
 
         return keyVaultURL;
     }
@@ -64,40 +59,46 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     }
 
     public String getCredentialID() {
-        if (StringUtils.isEmpty(this.credentialID)) {
-            resolveCredentialIdFromEnvironment()
-                    .ifPresent(id -> {
-                        this.credentialID = id;
-                        save();
-                    });
-        }
+        resolveCredentialIdFromEnvironment()
+                .ifPresent(id -> {
+                    this.credentialID = id;
+                    save();
+                });
 
         return this.credentialID;
     }
 
     private Optional<String> resolveKeyVaultUrlFromEnvironment() {
-        return getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_URL", "jenkins.azure-keyvault.url");
+        Optional<String> url = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_URL", "jenkins.azure-keyvault.url");
+
+        if (url.isPresent() && url.get().equals(this.keyVaultURL)) {
+            // don't overwrite the url if it matches what we currently have so as we don't save to disk all the time
+            return Optional.empty();
+        }
+
+        return url;
     }
 
     private Optional<String> resolveCredentialIdFromEnvironment() {
+
         // directly lookup the credential so that we don't get a stackoverflow due to credential provider
-        Optional<String> optionalCredentials = SystemCredentialsProvider.getInstance()
+        Optional<Credentials> optionalCredentials = SystemCredentialsProvider.getInstance()
                 .getCredentials()
                 .stream()
-                .filter(credentials -> (credentials instanceof AzureCredentials || credentials instanceof AzureImdsCredentials)  && ((IdCredentials) credentials).getId().equals(GENERATED_ID))
-                .map(credentials -> ((IdCredentials) credentials).getId())
+                .filter(credentials -> (credentials instanceof AzureCredentials || credentials instanceof AzureImdsCredentials) && ((IdCredentials) credentials).getId().equals(GENERATED_ID))
                 .findAny();
-
-        if (optionalCredentials.isPresent()) {
-            return optionalCredentials;
-        }
 
         String uami = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_UAMI_ENABLED", "jenkins.azure-keyvault.uami.enabled")
                 .orElse("false");
 
-        IdCredentials credentials;
+        AzureBaseCredentials credentials;
         if (uami.equals("true")) {
-             credentials = new AzureImdsCredentials(
+            if (optionalCredentials.isPresent() && optionalCredentials.get() instanceof AzureImdsCredentials) {
+                // don't overwrite the credential if it matches what we currently have so as we don't save to disk all the time
+                return Optional.empty();
+            }
+
+            credentials = new AzureImdsCredentials(
                     CredentialsScope.GLOBAL, GENERATED_ID, GENERATED_DESCRIPTION
             );
             storeCredential(credentials);
@@ -117,11 +118,30 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         String tenantId = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_TENANT_ID", "jenkins.azure-keyvault.sp.tenant_id")
                 .orElseThrow(IllegalArgumentException::new);
 
+        if (optionalCredentials.isPresent() && optionalCredentials.get() instanceof AzureCredentials &&
+                azureCredentialIsEqual(
+                        (AzureCredentials) optionalCredentials.get(),
+                        clientId,
+                        clientSecret,
+                        subscriptionId,
+                        tenantId)
+        ) {
+            // don't overwrite the credential if it matches what we currently have so as we don't save to disk all the time
+            return Optional.empty();
+        }
+
         AzureCredentials azureCredentials = new AzureCredentials(CredentialsScope.GLOBAL, GENERATED_ID, GENERATED_DESCRIPTION, subscriptionId, clientId, clientSecret);
         azureCredentials.setTenant(tenantId);
 
         storeCredential(azureCredentials);
         return Optional.of(azureCredentials.getId());
+    }
+
+    private boolean azureCredentialIsEqual(AzureCredentials creds, String clientId, String clientSecret, String subscriptionId, String tenantId) {
+        return StringUtils.equals(creds.getClientId(), clientId) &&
+                StringUtils.equals(creds.getPlainClientSecret(), clientSecret) &&
+                StringUtils.equals(creds.getSubscriptionId(), subscriptionId) &&
+                StringUtils.equals(creds.getTenant(), tenantId);
     }
 
     private Optional<String> getPropertyByEnvOrSystemProperty(String envVariable, String systemProperty) {
@@ -138,8 +158,20 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         return Optional.empty();
     }
 
-    private void storeCredential(IdCredentials credentials) {
+    private void storeCredential(AzureBaseCredentials credentials) {
         SystemCredentialsProvider instance = SystemCredentialsProvider.getInstance();
+        for (int i = 0; i < instance.getCredentials().size(); i++) {
+            Credentials cred = instance.getCredentials().get(i);
+            if (cred instanceof IdCredentials) {
+                IdCredentials idCredentials = (IdCredentials) cred;
+                if (idCredentials.getId().equals(credentials.getId())) {
+                    instance.getCredentials().remove(i);
+                    break;
+                }
+
+            }
+        }
+
         instance.getCredentials().add(credentials);
 
         try {
@@ -147,15 +179,6 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private String getEnvWithDefault(String property, String defaultValue) {
-        String result = System.getenv(property);
-
-        if (result == null) {
-            return defaultValue;
-        }
-        return property;
     }
 
     @DataBoundSetter
@@ -167,7 +190,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
 
     @SuppressWarnings("unused")
     public ListBoxModel doFillCredentialIDItems(@AncestorInPath Item context) {
-        if(context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER) ||
+        if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER) ||
                 context != null && !context.hasPermission(Item.EXTENDED_READ)) {
             return new StandardListBoxModel();
         }
