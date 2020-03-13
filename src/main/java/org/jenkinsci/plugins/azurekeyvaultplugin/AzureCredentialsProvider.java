@@ -10,6 +10,7 @@ import com.google.common.base.Suppliers;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.keyvault.KeyVaultClient;
 import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
+import com.microsoft.azure.keyvault.models.KeyVaultErrorException;
 import com.microsoft.azure.keyvault.models.SecretItem;
 import com.microsoft.jenkins.keyvault.SecretStringCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,12 +60,20 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         Logger.getLogger(OkHttpClient.class.getName()).setLevel(Level.FINE);
         if (ACL.SYSTEM.equals(authentication)) {
             final ArrayList<C> list = new ArrayList<>();
-            for (IdCredentials credential : credentialsSupplier.get()) {
-                if (aClass.isAssignableFrom(credential.getClass())) {
-                    // cast to keep generics happy even though we are assignable..
-                    list.add(aClass.cast(credential));
+            try {
+                for (IdCredentials credential : credentialsSupplier.get()) {
+                    if (aClass.isAssignableFrom(credential.getClass())) {
+                        // cast to keep generics happy even though we are assignable..
+                        list.add(aClass.cast(credential));
+                    }
+                    LOG.log(Level.FINEST, "getCredentials {0} does not match", credential.getId());
                 }
-                LOG.log(Level.FINEST, "getCredentials {0} does not match", credential.getId());
+            } catch (KeyVaultErrorException e) {
+                if (StringUtils.startsWith(e.getMessage(), "Status code 403")) {
+                    LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
+                    return Collections.emptyList();
+                }
+                throw e;
             }
             return list;
         }
