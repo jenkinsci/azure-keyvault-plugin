@@ -6,8 +6,8 @@
 [![Jenkins Plugin Installs][plugin-install-badge]][plugin]
 
 This plugin enables Jenkins to fetch secrets from Azure Keyvault and inject them directly into build jobs.
-This works similarly to the [Credential Binding Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Binding+Plugin) and borrows much from the [Hashicorp Vault Plugin](https://wiki.jenkins-ci.org/display/JENKINS/HashiCorp+Vault+Plugin).
-The plugin acts as an Azure Active Directory Application and must be configured with an Application ID and Token. Additional details [here](https://docs.microsoft.com/en-us/azure/app-service-mobile/app-service-mobile-how-to-configure-active-directory-authentication#optional-configure-a-native-client-application).
+It works similarly to the [Credential Binding Plugin](https://plugins.jenkins.io/credentials-binding/) and borrows much from the [Hashicorp Vault Plugin](https://plugins.jenkins.io/hashicorp-vault-plugin/).
+The plugin acts as an Azure Active Directory Application and must be configured with a valid credential. Additional details [here](https://docs.microsoft.com/en-us/azure/app-service-mobile/app-service-mobile-how-to-configure-active-directory-authentication#optional-configure-a-native-client-application).
 
 ## System Configuration
 
@@ -15,11 +15,11 @@ The plugin acts as an Azure Active Directory Application and must be configured 
 
 In the Jenkins **Configure System** page, configure the following two options in the **Azure Key Vault Plugin** section
 * **Key Vault URL** - The url where your keyvault resides (e.g. `https://myvault.vault.azure.net/`)
-* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Both **Microsoft Azure Service Principal** and **Username/Password** types are supported
+* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are: **Microsoft Azure Service Principal**, **Managed Identities for Azure Resources** and **Username/Password**.
 
-### Via configuration as code
+### Via configuration-as-code
 
-This plugin supports being configured with [configuration as code](https://github.com/jenkinsci/configuration-as-code-plugin/)
+This plugin supports the [configuration as code](https://github.com/jenkinsci/configuration-as-code-plugin/) plugin:
 
 Example yaml:
 ```yaml
