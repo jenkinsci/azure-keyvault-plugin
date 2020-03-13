@@ -13,7 +13,7 @@ The plugin acts as an Azure Active Directory Application and must be configured 
 
 ### Via UI
 
-In the Jenkins **Configure System** page, configure the following three options in the **Azure Key Vault Plugin** section
+In the Jenkins **Configure System** page, configure the following two options in the **Azure Key Vault Plugin** section
 * **Key Vault URL** - The url where your keyvault resides (e.g. `https://myvault.vault.azure.net/`)
 * **Credential ID** - The ID associated with a secret in the Jenkins secret store. Both **Microsoft Azure Service Principal** and **Username/Password** types are supported
 
@@ -56,6 +56,51 @@ credentials:
             password: "${CLIENT_SECRET"
 ```
 
+### Via system properties
+
+URL:
+
+```bash
+-Djenkins.azure-keyvault.url=https://my.vault.azure.net
+```
+
+User Assigned Managed Identity:
+
+```bash
+-Djenkins.azure-keyvault.uami.enabled=true
+```
+
+Service principal:
+
+```bash
+-Djenkins.azure-keyvault.sp.client_id=...
+-Djenkins.azure-keyvault.sp.client_secret=...
+-Djenkins.azure-keyvault.sp.subscription_id=...
+-Djenkins.azure-keyvault.sp.tenant_id=...
+```
+
+### Via environment variables
+
+URL:
+
+```bash
+AZURE_KEYVAULT_URL=https://my.vault.azure.net
+```
+
+User Assigned Managed Identity:
+
+```bash
+AZURE_KEYVAULT_UAMI_ENABLED=true
+```
+
+Service principal:
+
+```bash
+AZURE_KEYVAULT_SP_CLIENT_ID=...
+AZURE_KEYVAULT_SP_CLIENT_SECRET=...
+AZURE_KEYVAULT_SP_SUBSCRIPTION_ID=...
+AZURE_KEYVAULT_SP_SUBSCRIPTION_ID=...
+```
 
 ## Building the Plugin
 * Run **mvn package**, an .hpi file will be generated in the target folder.
