@@ -69,11 +69,8 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     LOG.log(Level.FINEST, "getCredentials {0} does not match", credential.getId());
                 }
             } catch (KeyVaultErrorException e) {
-                if (StringUtils.startsWith(e.getMessage(), "Status code 403")) {
-                    LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
-                    return Collections.emptyList();
-                }
-                throw e;
+                LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
+                return Collections.emptyList();
             }
             return list;
         }
