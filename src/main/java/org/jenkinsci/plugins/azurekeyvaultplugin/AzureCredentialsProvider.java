@@ -102,18 +102,23 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             return Collections.emptyList();
         }
 
-        KeyVaultClient client = new KeyVaultClient(keyVaultCredentials);
-        String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
-        List<IdCredentials> credentials = new ArrayList<>();
-        PagedList<SecretItem> secretItems = client.getSecrets(keyVaultURL);
-        for (SecretItem secretItem : secretItems) {
-            String id = secretItem.id();
-            IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, getSecretName(id),
-                    id, credentialID, id);
-            credentials.add(cred);
+        try {
+            KeyVaultClient client = new KeyVaultClient(keyVaultCredentials);
+            String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
+            List<IdCredentials> credentials = new ArrayList<>();
+            PagedList<SecretItem> secretItems = client.getSecrets(keyVaultURL);
+            for (SecretItem secretItem : secretItems) {
+                String id = secretItem.id();
+                IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, getSecretName(id),
+                        id, credentialID, id);
+                credentials.add(cred);
+            }
+            client.httpClient().connectionPool().evictAll();
+            return credentials;
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
+            return Collections.emptyList();
         }
-        client.httpClient().connectionPool().evictAll();
-        return credentials;
     }
 
     @Override
