@@ -1,11 +1,11 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.security.keyvault.secrets.SecretClient;
+import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.azure.keyvault.KeyVaultClient;
-import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
-import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.microsoft.azure.util.AzureCredentials;
 import hudson.Extension;
 import hudson.FilePath;
@@ -38,9 +38,9 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getCredentialById;
 import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getSecretBundle;
 
@@ -91,10 +91,7 @@ public class AzureKeyVaultStep extends Step {
             throw new CredentialNotFoundException("Unable to find a valid credential with provided parameters");
         }
 
-        Run run = context.get(Run.class);
-        KeyVaultCredentials credential = getCredentialById(resolvedCredentialId, run);
-
-        return new ExecutionImpl(context, resolvedKeyVaultUrl, credential, secrets);
+        return new ExecutionImpl(context, resolvedKeyVaultUrl, resolvedCredentialId, secrets);
     }
 
     /**
@@ -103,18 +100,18 @@ public class AzureKeyVaultStep extends Step {
     private static class ExecutionImpl extends AbstractStepExecutionImpl {
 
         private final String keyVaultURL;
-        private final KeyVaultCredentials credential;
+        private final String credentialId;
         private final List<AzureKeyVaultSecret> azureKeyVaultSecrets;
 
         ExecutionImpl(
                 StepContext context,
                 String keyVaultURL,
-                KeyVaultCredentials credential,
+                String credentialId,
                 List<AzureKeyVaultSecret> azureKeyVaultSecrets
         ) {
             super(context);
             this.keyVaultURL = keyVaultURL;
-            this.credential = credential;
+            this.credentialId = credentialId;
             this.azureKeyVaultSecrets = azureKeyVaultSecrets;
         }
 
@@ -127,6 +124,9 @@ public class AzureKeyVaultStep extends Step {
         public boolean start() throws Exception {
             StepContext context = getContext();
             BodyInvoker invoker = context.newBodyInvoker().withCallback(BodyExecutionCallback.wrap(context));
+
+            Run run = context.get(Run.class);
+            TokenCredential credential = getCredentialById(credentialId, run);
 
             Map<String, String> secrets = getSecretsMap(credential, keyVaultURL, azureKeyVaultSecrets);
 
@@ -141,23 +141,23 @@ public class AzureKeyVaultStep extends Step {
             return false;
         }
 
-        private SecretBundle getSecret(KeyVaultClient client, String keyVaultURL, AzureKeyVaultSecret secret) {
-            return getSecretBundle(client, secret, keyVaultURL);
+        private KeyVaultSecret getSecret(SecretClient client, AzureKeyVaultSecret secret) {
+            return getSecretBundle(client, secret);
         }
 
-        private Map<String, String> getSecretsMap(KeyVaultCredentials credential, String keyVaultURL, List<AzureKeyVaultSecret> azureKeyVaultSecrets) {
+        private Map<String, String> getSecretsMap(TokenCredential credential, String keyVaultURL, List<AzureKeyVaultSecret> azureKeyVaultSecrets) {
             if (azureKeyVaultSecrets == null || azureKeyVaultSecrets.isEmpty()) {
                 return Collections.emptyMap();
             }
 
             Map<String, String> secrets = new HashMap<>();
-            KeyVaultClient client = new KeyVaultClient(credential);
+            SecretClient client = AzureCredentials.createKeyVaultClient(credential, keyVaultURL);
 
             for (AzureKeyVaultSecret secret : azureKeyVaultSecrets) {
                 if (secret.isPassword()) {
-                    SecretBundle bundle = getSecret(client, keyVaultURL, secret);
+                    KeyVaultSecret bundle = getSecret(client, secret);
                     if (bundle != null) {
-                        secrets.put(secret.getEnvVariable(), bundle.value());
+                        secrets.put(secret.getEnvVariable(), bundle.getValue());
                     } else {
                         throw new AzureKeyVaultException(
                                 format(
@@ -168,11 +168,11 @@ public class AzureKeyVaultStep extends Step {
                         );
                     }
                 } else if (secret.isCertificate()) {
-                    SecretBundle bundle = getSecret(client, keyVaultURL, secret);
+                    KeyVaultSecret bundle = getSecret(client, secret);
                     if (bundle != null) {
                         try {
                             FilePath filePath = requireNonNull(getContext().get(FilePath.class));
-                            String path = AzureKeyVaultUtil.convertAndWritePfxToDisk(filePath, bundle.value());
+                            String path = AzureKeyVaultUtil.convertAndWritePfxToDisk(filePath, bundle.getValue());
                             secrets.put(secret.getEnvVariable(), path);
                         } catch (Exception e) {
                             throw new AzureKeyVaultException(e.getMessage(), e);

@@ -1,16 +1,13 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.security.keyvault.secrets.SecretClient;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import com.microsoft.azure.PagedList;
-import com.microsoft.azure.keyvault.KeyVaultClient;
-import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
-import com.microsoft.azure.keyvault.models.KeyVaultErrorException;
-import com.microsoft.azure.keyvault.models.SecretItem;
 import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
@@ -206,15 +203,25 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
             @QueryParameter("credentialID") final String credentialID
     ) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
-        try {
-            KeyVaultCredentials keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
-            KeyVaultClient client = new KeyVaultClient(keyVaultCredentials);
 
-            PagedList<SecretItem> secretBundle = client.listSecrets(keyVaultURL);
-            return FormValidation.ok(String.format("Success, found %d secrets in the vault", secretBundle.size()));
-        } catch (KeyVaultErrorException e) {
+        if (keyVaultURL == null) {
+            return FormValidation.error("Key vault url is required");
+        }
+
+        if (credentialID == null) {
+            return FormValidation.error("Credential ID is required");
+        }
+
+        try {
+            TokenCredential keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
+
+            SecretClient client = AzureCredentials.createKeyVaultClient(keyVaultCredentials, keyVaultURL);
+
+            Long numberOfSecrets = client.listPropertiesOfSecrets().stream().count();
+            return FormValidation.ok(String.format("Success, found %d secrets in the vault", numberOfSecrets));
+        } catch (RuntimeException e) {
             LOG.log(Level.WARNING, "Failed testing connection", e);
-            return FormValidation.error(e.getMessage());
+            return FormValidation.error(e, e.getMessage());
         }
     }
 

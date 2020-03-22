@@ -25,7 +25,6 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import hudson.FilePath;
-import hudson.util.Secret;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,10 +40,6 @@ class AzureKeyVaultUtil {
 
     private static final char[] EMPTY_CHAR_ARRAY = new char[0];
     private static final String PKCS12 = "PKCS12";
-
-    static boolean isNotEmpty(Secret secret) {
-        return secret != null && !secret.getPlainText().isEmpty();
-    }
 
     static String convertAndWritePfxToDisk(FilePath workspace, String secret)
             throws IOException, GeneralSecurityException, InterruptedException {
