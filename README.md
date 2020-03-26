@@ -241,12 +241,15 @@ Declarative Pipeline:
 
 ```groovy
 pipeline {
+    agent any
     environment {
         GITHUB_API_TOKEN = credentials('github-api-token')
     }
     stages {
         stage('Foo') {
-            echo '$GITHUB_API_TOKEN'
+            steps {
+                echo '$GITHUB_API_TOKEN'
+            }
         }
     }
 }
