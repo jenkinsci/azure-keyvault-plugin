@@ -28,7 +28,7 @@ public class AzureKeyVaultCredentialRetriever {
 
     @CheckForNull
     public static TokenCredential getCredentialById(String credentialID, Run<?, ?> build) {
-        TokenCredential credential = null;
+        TokenCredential credential;
         IdCredentials cred = CredentialsProvider.findCredentialById(credentialID, IdCredentials.class, build);
 
         if (cred == null) {
@@ -45,7 +45,7 @@ public class AzureKeyVaultCredentialRetriever {
                     .tenantId(azureCredentials.getTenant())
                     .build();
         } else if (cred instanceof AzureImdsCredentials) {
-            new ManagedIdentityCredentialBuilder().build();
+            credential = new ManagedIdentityCredentialBuilder().build();
         } else {
             throw new AzureKeyVaultException("Could not determine the type for Secret id "
                     + credentialID +
