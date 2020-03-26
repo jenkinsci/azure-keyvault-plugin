@@ -67,7 +67,7 @@ public class AzureKeyVaultCredentialRetriever {
                         CredentialsMatchers.withId(credentialID));
 
         if (!azureImdsCredentials.isEmpty()) {
-            new ManagedIdentityCredentialBuilder().build();
+            return new ManagedIdentityCredentialBuilder().build();
         }
 
         List<AzureCredentials> azureCredentials =
