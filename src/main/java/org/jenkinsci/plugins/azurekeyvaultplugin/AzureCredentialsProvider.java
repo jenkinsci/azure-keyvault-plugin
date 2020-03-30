@@ -1,5 +1,9 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.http.rest.PagedIterable;
+import com.azure.security.keyvault.secrets.SecretClient;
+import com.azure.security.keyvault.secrets.models.SecretProperties;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
@@ -7,11 +11,7 @@ import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Suppliers;
-import com.microsoft.azure.PagedList;
-import com.microsoft.azure.keyvault.KeyVaultClient;
-import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
-import com.microsoft.azure.keyvault.models.KeyVaultErrorException;
-import com.microsoft.azure.keyvault.models.SecretItem;
+import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.keyvault.SecretStringCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -30,7 +30,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
-import okhttp3.OkHttpClient;
 import org.acegisecurity.Authentication;
 import org.apache.commons.lang3.StringUtils;
 
@@ -57,7 +56,6 @@ public class AzureCredentialsProvider extends CredentialsProvider {
     @Override
     public <C extends Credentials> List<C> getCredentials(@NonNull Class<C> aClass, @Nullable ItemGroup itemGroup,
                                                           @Nullable Authentication authentication) {
-        Logger.getLogger(OkHttpClient.class.getName()).setLevel(Level.FINE);
         if (ACL.SYSTEM.equals(authentication)) {
             final ArrayList<C> list = new ArrayList<>();
             try {
@@ -68,7 +66,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     }
                     LOG.log(Level.FINEST, "getCredentials {0} does not match", credential.getId());
                 }
-            } catch (KeyVaultErrorException e) {
+            } catch (RuntimeException e) {
                 LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
                 return Collections.emptyList();
             }
@@ -97,23 +95,22 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         }
 
         String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
-        KeyVaultCredentials keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
+        TokenCredential keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
         if (keyVaultCredentials == null) {
             return Collections.emptyList();
         }
 
         try {
-            KeyVaultClient client = new KeyVaultClient(keyVaultCredentials);
-            String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
+            SecretClient client = AzureCredentials.createKeyVaultClient(keyVaultCredentials, azureKeyVaultGlobalConfiguration.getKeyVaultURL());
+
             List<IdCredentials> credentials = new ArrayList<>();
-            PagedList<SecretItem> secretItems = client.getSecrets(keyVaultURL);
-            for (SecretItem secretItem : secretItems) {
-                String id = secretItem.id();
-                IdCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, getSecretName(id),
+            PagedIterable<SecretProperties> secretItems = client.listPropertiesOfSecrets();
+            for (SecretProperties secretItem : secretItems) {
+                String id = secretItem.getId();
+                SecretStringCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, getSecretName(id),
                         id, credentialID, id);
                 credentials.add(cred);
             }
-            client.httpClient().connectionPool().evictAll();
             return credentials;
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);

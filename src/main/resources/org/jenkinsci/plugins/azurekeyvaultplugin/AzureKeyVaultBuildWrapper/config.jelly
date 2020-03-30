@@ -13,6 +13,9 @@
         <f:entry title="Override Application Secret" field="applicationSecretOverride">
           <f:textbox />
         </f:entry>
+        <f:entry title="Override Tenant ID" field="tenantIdOverride">
+          <f:textbox />
+        </f:entry>
         <f:entry title="Override Credential ID" field="credentialIDOverride">
           <c:select />
         </f:entry>

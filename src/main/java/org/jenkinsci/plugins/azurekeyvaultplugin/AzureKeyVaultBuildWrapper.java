@@ -24,12 +24,13 @@
 
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.identity.ClientSecretCredentialBuilder;
+import com.azure.security.keyvault.secrets.SecretClient;
+import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import com.microsoft.azure.keyvault.KeyVaultClient;
-import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
-import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -42,7 +43,6 @@ import hudson.model.TaskListener;
 import hudson.security.ACL;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
-import hudson.util.Secret;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -75,6 +75,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     private String applicationID;
     private String applicationSecret;
     private String credentialID;
+    private String tenantId;
 
     @DataBoundConstructor
     public AzureKeyVaultBuildWrapper(@CheckForNull List<AzureKeyVaultSecret> azureKeyVaultSecrets) {
@@ -121,6 +122,15 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         this.credentialID = fixEmpty(credentialID);
     }
 
+    public String getTenantIdOverride() {
+        return this.tenantId;
+    }
+
+    @DataBoundSetter
+    public void setTenantIdOverride(String tenantId) {
+        this.tenantId = fixEmpty(tenantId);
+    }
+
     // Get the default value only if it is not overridden for this build
     public String getKeyVaultURL() {
         AzureKeyVaultGlobalConfiguration globalConfiguration = AzureKeyVaultGlobalConfiguration.get();
@@ -141,16 +151,12 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
     }
 
 
-    public KeyVaultCredentials getKeyVaultCredential(Run<?, ?> build) {
+    public TokenCredential getKeyVaultCredential(Run<?, ?> build) {
         // Try override values
         LOGGER.fine("Trying override credentials...");
-        KeyVaultCredentials credential = getKeyVaultCredential(build, this.applicationSecret, this.credentialID);
-        if (credential instanceof AzureKeyVaultCredential && ((AzureKeyVaultCredential)credential).isValid()) {
+        TokenCredential credential = getKeyVaultCredential(build, this.applicationSecret, this.credentialID, this.tenantId);
+        if (credential != null) {
             LOGGER.fine("Using override credentials");
-            return credential;
-        }
-
-        if (credential instanceof AzureKeyVaultImdsCredential) {
             return credential;
         }
 
@@ -159,20 +165,19 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         credential = getKeyVaultCredential(
                 build,
                 null,
-                AzureKeyVaultGlobalConfiguration.get().getCredentialID()
+                AzureKeyVaultGlobalConfiguration.get().getCredentialID(),
+                null
         );
-        if (credential instanceof AzureKeyVaultCredential && ((AzureKeyVaultCredential)credential).isValid()) {
-            LOGGER.fine("Using global credentials");
+
+        if (credential != null) {
             return credential;
         }
 
-        if (credential instanceof AzureKeyVaultImdsCredential) {
-            return credential;
-        }
         throw new AzureKeyVaultException("Unable to find a valid credential with provided parameters");
     }
 
-    public KeyVaultCredentials getKeyVaultCredential(Run<?, ?> build, String applicationSecret, String credentialID) {
+    @CheckForNull
+    public TokenCredential getKeyVaultCredential(Run<?, ?> build, String applicationSecret, String credentialID, String tenantId) {
         if (StringUtils.isNotEmpty(credentialID)) {
             LOGGER.fine("Fetching credentials by ID");
             return getCredentialById(credentialID, build);
@@ -180,12 +185,20 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
 
         // Try AppID/Secret
         if (StringUtils.isNotEmpty(applicationSecret)) {
+            if (StringUtils.isEmpty(tenantId)) {
+                throw new IllegalArgumentException("Set `tenantId` in your withAzureKeyVault configuration, or migrate " +
+                        "to using either a 'Microsoft Azure Service Principal' or a 'Managed Identities for Azure Resources'");
+            }
             // Allowed in pipeline, but not global  config
             LOGGER.fine("Using explicit application secret.");
-            return new AzureKeyVaultCredential(getApplicationID(), Secret.fromString(applicationSecret));
+            return new ClientSecretCredentialBuilder()
+                    .clientId(getApplicationID())
+                    .clientSecret(applicationSecret)
+                    .tenantId(tenantId)
+                    .build();
         }
 
-        return new AzureKeyVaultCredential();
+        return null;
     }
 
     public String getApplicationID() {
@@ -208,9 +221,8 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    private SecretBundle getSecret(KeyVaultClient client, AzureKeyVaultSecret secret) {
-        String keyVaultURL = getKeyVaultURL();
-        return getSecretBundle(client, secret, keyVaultURL);
+    private KeyVaultSecret getSecret(SecretClient client, AzureKeyVaultSecret secret) {
+        return getSecretBundle(client, secret);
     }
 
     public void setUp(Context context, Run<?, ?> build, FilePath workspace,
@@ -219,31 +231,29 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             return;
         }
 
-        KeyVaultCredentials creds = getKeyVaultCredential(build);
-        KeyVaultClient client = new KeyVaultClient(creds);
+        SecretClient client = AzureCredentials.createKeyVaultClient(getKeyVaultCredential(build), getKeyVaultURL());
 
-        String keyVaultURL = getKeyVaultURL();
         for (AzureKeyVaultSecret secret : azureKeyVaultSecrets) {
             if (secret.isPassword()) {
-                SecretBundle bundle = getSecret(client, secret);
+                KeyVaultSecret bundle = getSecret(client, secret);
                 if (bundle != null) {
-                    valuesToMask.add(bundle.value());
-                    context.env(secret.getEnvVariable(), bundle.value());
+                    valuesToMask.add(bundle.getValue());
+                    context.env(secret.getEnvVariable(), bundle.getValue());
                 } else {
                     throw new AzureKeyVaultException(
                             format(
                                     "Secret: %s not found in vault: %s",
                                     secret.getName(),
-                                    keyVaultURL
+                                    getKeyVaultURL()
                             )
                     );
                 }
             } else if (secret.isCertificate()) {
                 // Get Certificate from Keyvault as a Secret
-                SecretBundle bundle = getSecret(client, secret);
+                KeyVaultSecret bundle = getSecret(client, secret);
                 if (bundle != null) {
                     try {
-                        String path = AzureKeyVaultUtil.convertAndWritePfxToDisk(workspace, bundle.value());
+                        String path = AzureKeyVaultUtil.convertAndWritePfxToDisk(workspace, bundle.getValue());
                         context.env(secret.getEnvVariable(), path);
                     } catch (Exception e) {
                         throw new AzureKeyVaultException(e.getMessage(), e);
@@ -253,7 +263,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
                             format(
                                     "Certificate: %s not found in vault: %s",
                                     secret.getName(),
-                                    keyVaultURL
+                                    getKeyVaultURL()
                             )
                     );
                 }
@@ -280,7 +290,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         @SuppressWarnings("unused")
         public ListBoxModel doFillCredentialIDOverrideItems(@AncestorInPath Item context) {
             return new StandardListBoxModel().includeEmptyValue()
-                    .includeAs(ACL.SYSTEM, context, StandardUsernamePasswordCredentials.class)
+                    .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class)
                     .includeAs(ACL.SYSTEM, context, AzureCredentials.class);
         }
 

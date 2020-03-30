@@ -1,11 +1,11 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
-import com.microsoft.azure.keyvault.KeyVaultClient;
-import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
-import com.microsoft.azure.keyvault.models.SecretBundle;
+import com.azure.core.credential.TokenCredential;
+import com.azure.security.keyvault.secrets.SecretClient;
+import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
+import com.microsoft.azure.util.AzureCredentials;
 import hudson.Extension;
 import io.jenkins.plugins.casc.SecretSource;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.logging.Logger;
 import jenkins.model.GlobalConfiguration;
@@ -16,7 +16,7 @@ public class AzureKeyVaultSecretSource extends SecretSource {
     private static final Logger LOGGER = Logger.getLogger(AzureKeyVaultSecretSource.class.getName());
 
     @Override
-    public Optional<String> reveal(String secret) throws IOException {
+    public Optional<String> reveal(String secret) {
         AzureKeyVaultGlobalConfiguration azureKeyVaultGlobalConfiguration = GlobalConfiguration.all().get(AzureKeyVaultGlobalConfiguration.class);
         if (azureKeyVaultGlobalConfiguration == null) {
             LOGGER.info("No AzureKeyVault url found, skipping jcasc secret resolution");
@@ -24,18 +24,17 @@ public class AzureKeyVaultSecretSource extends SecretSource {
         }
 
         String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
-        KeyVaultCredentials keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
+        TokenCredential keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
         if (keyVaultCredentials == null) {
             LOGGER.info("No AzureKeyVault credentials found, skipping jcasc secret resolution");
             return Optional.empty();
         }
 
-        KeyVaultClient client = new KeyVaultClient(keyVaultCredentials);
-        String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
+        SecretClient client = AzureCredentials.createKeyVaultClient(keyVaultCredentials, azureKeyVaultGlobalConfiguration.getKeyVaultURL());
 
-        SecretBundle secretBundle = client.getSecret(keyVaultURL, secret);
+        KeyVaultSecret secretBundle = client.getSecret(secret);
         if (secretBundle != null) {
-            return Optional.of(secretBundle.value());
+            return Optional.of(secretBundle.getValue());
         }
 
         LOGGER.info("Couldn't find secret: " + secret);
