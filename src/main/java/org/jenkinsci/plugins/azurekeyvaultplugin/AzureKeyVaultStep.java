@@ -4,9 +4,9 @@ import com.azure.core.credential.TokenCredential;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
@@ -217,7 +217,7 @@ public class AzureKeyVaultStep extends Step {
         @SuppressWarnings("unused")
         public ListBoxModel doFillCredentialIDItems(@AncestorInPath Item context) {
             return new StandardListBoxModel().includeEmptyValue()
-                    .includeAs(ACL.SYSTEM, context, StandardUsernamePasswordCredentials.class)
+                    .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class)
                     .includeAs(ACL.SYSTEM, context, AzureCredentials.class);
         }
 
