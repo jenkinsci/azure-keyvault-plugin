@@ -9,8 +9,8 @@ import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
-import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainCredentials;
+import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.model.Run;
@@ -29,7 +29,7 @@ public class AzureKeyVaultCredentialRetriever {
     @CheckForNull
     public static TokenCredential getCredentialById(String credentialID, Run<?, ?> build) {
         TokenCredential credential;
-        IdCredentials cred = CredentialsProvider.findCredentialById(credentialID, IdCredentials.class, build);
+        AzureBaseCredentials cred = CredentialsProvider.findCredentialById(credentialID, AzureBaseCredentials.class, build);
 
         if (cred == null) {
             throw new AzureKeyVaultException(String.format("Credential: %s was not found", credentialID));
@@ -49,7 +49,7 @@ public class AzureKeyVaultCredentialRetriever {
         } else {
             throw new AzureKeyVaultException("Could not determine the type for Secret id "
                     + credentialID +
-                    " only 'Username/Password', and 'Microsoft Azure Service Principal' are supported");
+                    " only 'Microsoft Azure Service Principal' and 'Managed Identities for Azure Resources' are supported");
         }
 
         return credential;
