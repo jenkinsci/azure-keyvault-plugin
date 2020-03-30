@@ -15,7 +15,7 @@ The plugin acts as an Azure Active Directory Application and must be configured 
 
 In the Jenkins **Configure System** page, configure the following two options in the **Azure Key Vault Plugin** section
 * **Key Vault URL** - The url where your keyvault resides (e.g. `https://myvault.vault.azure.net/`)
-* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are: **Microsoft Azure Service Principal** and **Managed Identities for Azure Resources**.
+* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are: **Microsoft Azure Service Principal**, **Managed Identities for Azure Resources** and **Username/Password**.
 
 ### Via configuration-as-code
 
@@ -41,6 +41,19 @@ unclassified:
   azureKeyVault:
     keyVaultURL: https://not-a-real-vault.vault.azure.net
     credentialID: service-principal
+```
+
+You can also use a username / password credential:
+```yaml
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+        - usernamePassword:
+            scope:    SYSTEM
+            id:       "service-principal"
+            username: client_id
+            password: "${CLIENT_SECRET"
 ```
 
 ### Via system properties

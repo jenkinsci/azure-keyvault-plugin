@@ -7,6 +7,7 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
@@ -234,6 +235,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
 
         return new StandardListBoxModel()
                 .includeEmptyValue()
+                .includeAs(ACL.SYSTEM, context, StandardUsernamePasswordCredentials.class)
                 .includeAs(ACL.SYSTEM, context, AzureCredentials.class)
                 .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class);
     }

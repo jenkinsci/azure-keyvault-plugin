@@ -29,8 +29,8 @@ import com.azure.identity.ClientSecretCredentialBuilder;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -290,7 +290,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         @SuppressWarnings("unused")
         public ListBoxModel doFillCredentialIDOverrideItems(@AncestorInPath Item context) {
             return new StandardListBoxModel().includeEmptyValue()
-                    .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class)
+                    .includeAs(ACL.SYSTEM, context, StandardUsernamePasswordCredentials.class)
                     .includeAs(ACL.SYSTEM, context, AzureCredentials.class);
         }
 
