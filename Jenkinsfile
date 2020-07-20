@@ -1,1 +1,1 @@
-buildPlugin(forceAci: true)
+buildPlugin(useAci: true)
