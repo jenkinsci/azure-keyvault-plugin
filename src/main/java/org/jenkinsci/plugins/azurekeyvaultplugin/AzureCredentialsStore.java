@@ -31,21 +31,21 @@ public class AzureCredentialsStore extends CredentialsStore {
     @NonNull
     @Override
     public ModelObject getContext() {
-        return Jenkins.getInstance();
+        return Jenkins.get();
     }
 
     @Override
     public boolean hasPermission(@NonNull Authentication authentication, @NonNull Permission permission) {
         return CredentialsProvider.VIEW.equals(permission)
-                && Jenkins.getInstance().getACL().hasPermission(authentication, permission);
+                && Jenkins.get().getACL().hasPermission(authentication, permission);
     }
 
     @NonNull
     @Override
     public List<Credentials> getCredentials(@NonNull Domain domain) {
         if (Domain.global().equals(domain)
-                && Jenkins.getInstance().hasPermission(CredentialsProvider.VIEW)) {
-            return provider.getCredentials(Credentials.class, Jenkins.getInstance(), ACL.SYSTEM);
+                && Jenkins.get().hasPermission(CredentialsProvider.VIEW)) {
+            return provider.getCredentials(Credentials.class, Jenkins.get(), ACL.SYSTEM);
         } else {
             return Collections.emptyList();
         }
