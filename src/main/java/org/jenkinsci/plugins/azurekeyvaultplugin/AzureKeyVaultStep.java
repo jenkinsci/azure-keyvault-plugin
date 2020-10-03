@@ -7,6 +7,7 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
@@ -125,7 +126,7 @@ public class AzureKeyVaultStep extends Step {
             StepContext context = getContext();
             BodyInvoker invoker = context.newBodyInvoker().withCallback(BodyExecutionCallback.wrap(context));
 
-            Run run = context.get(Run.class);
+            Run<?,?> run = context.get(Run.class);
             TokenCredential credential = getCredentialById(credentialId, run);
 
             Map<String, String> secrets = getSecretsMap(credential, keyVaultURL, azureKeyVaultSecrets);
@@ -209,7 +210,7 @@ public class AzureKeyVaultStep extends Step {
         /**
          * {@inheritDoc}
          */
-        @Override
+        @Override @NonNull
         public String getDisplayName() {
             return "azureKeyVault";
         }
