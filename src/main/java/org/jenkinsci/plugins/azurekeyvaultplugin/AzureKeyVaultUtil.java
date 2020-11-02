@@ -24,7 +24,13 @@
 
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.FilePath;
+import hudson.model.Item;
+import hudson.security.ACL;
+import hudson.util.ListBoxModel;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,6 +41,7 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.util.Enumeration;
 import javax.xml.bind.DatatypeConverter;
+import jenkins.model.Jenkins;
 
 class AzureKeyVaultUtil {
 
@@ -71,5 +78,16 @@ class AzureKeyVaultUtil {
 
         URI uri = outFile.toURI();
         return uri.getPath();
+    }
+
+    public static ListBoxModel doFillCredentialIDItems(Item context) {
+        if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER) ||
+                context != null && !context.hasPermission(Item.CONFIGURE)) {
+            return new StandardListBoxModel();
+        }
+
+        return new StandardListBoxModel().includeEmptyValue()
+                .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class)
+                .includeAs(ACL.SYSTEM, context, AzureCredentials.class);
     }
 }

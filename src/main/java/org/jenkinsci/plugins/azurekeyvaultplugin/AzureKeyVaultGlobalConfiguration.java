@@ -6,14 +6,12 @@ import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Item;
-import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
@@ -227,15 +225,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     @POST
     @SuppressWarnings("unused")
     public ListBoxModel doFillCredentialIDItems(@AncestorInPath Item context) {
-        if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER) ||
-                context != null && !context.hasPermission(Item.EXTENDED_READ)) {
-            return new StandardListBoxModel();
-        }
-
-        return new StandardListBoxModel()
-                .includeEmptyValue()
-                .includeAs(ACL.SYSTEM, context, AzureCredentials.class)
-                .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class);
+        return AzureKeyVaultUtil.doFillCredentialIDItems(context);
     }
 
     public static AzureKeyVaultGlobalConfiguration get() {
