@@ -9,11 +9,11 @@
     <relativePath />
   </parent>
   <artifactId>azure-keyvault</artifactId>
-  <version>2.1</version>
+  <version>${revision}${changelist}</version>
   <packaging>hpi</packaging>
 
   <properties>
-    <revision>2.1</revision>
+    <revision>2.2</revision>
     <changelist>-SNAPSHOT</changelist>
     <jenkins.version>2.176.4</jenkins.version>
     <java.level>8</java.level>
@@ -43,7 +43,7 @@
     <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    <tag>azure-keyvault-2.1</tag>
+    <tag>${scmTag}</tag>
   </scm>
 
   <repositories>
