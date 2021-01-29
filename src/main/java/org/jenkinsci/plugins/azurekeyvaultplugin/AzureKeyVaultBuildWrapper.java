@@ -28,9 +28,7 @@ import com.azure.core.credential.TokenCredential;
 import com.azure.identity.ClientSecretCredentialBuilder;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -40,7 +38,6 @@ import hudson.model.AbstractProject;
 import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.security.ACL;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import java.util.ArrayList;
@@ -54,6 +51,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.verb.POST;
 
 import static hudson.Util.fixEmpty;
 import static java.lang.String.format;
@@ -288,10 +286,9 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         }
 
         @SuppressWarnings("unused")
+        @POST
         public ListBoxModel doFillCredentialIDOverrideItems(@AncestorInPath Item context) {
-            return new StandardListBoxModel().includeEmptyValue()
-                    .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class)
-                    .includeAs(ACL.SYSTEM, context, AzureCredentials.class);
+            return AzureKeyVaultUtil.doFillCredentialIDItems(context);
         }
 
         @Override

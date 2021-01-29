@@ -3,10 +3,8 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 import com.azure.core.credential.TokenCredential;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.azure.util.AzureImdsCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
@@ -14,7 +12,6 @@ import hudson.Util;
 import hudson.console.ConsoleLogFilter;
 import hudson.model.Item;
 import hudson.model.Run;
-import hudson.security.ACL;
 import hudson.util.ListBoxModel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -38,6 +35,7 @@ import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.verb.POST;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -216,10 +214,9 @@ public class AzureKeyVaultStep extends Step {
         }
 
         @SuppressWarnings("unused")
+        @POST
         public ListBoxModel doFillCredentialIDItems(@AncestorInPath Item context) {
-            return new StandardListBoxModel().includeEmptyValue()
-                    .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class)
-                    .includeAs(ACL.SYSTEM, context, AzureCredentials.class);
+            return AzureKeyVaultUtil.doFillCredentialIDItems(context);
         }
 
         /**
