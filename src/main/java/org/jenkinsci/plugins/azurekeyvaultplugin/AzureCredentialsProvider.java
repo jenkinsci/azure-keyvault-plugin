@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -107,9 +108,14 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             PagedIterable<SecretProperties> secretItems = client.listPropertiesOfSecrets();
             for (SecretProperties secretItem : secretItems) {
                 String id = secretItem.getId();
-                SecretStringCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, getSecretName(id),
-                        id, credentialID, id);
-                credentials.add(cred);
+                Map<String, String> tags = secretItem.getTags();
+                if (tags.containsKey("username")) {
+                    AzureKeyVaultUsernamePasswordCredentials cred = new AzureKeyVaultUsernamePasswordCredentials(CredentialsScope.GLOBAL, getSecretName(id), tags.get("username"), id, credentialID, id);
+                    credentials.add(cred);
+                } else {
+                    SecretStringCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, getSecretName(id), id, credentialID, id);
+                    credentials.add(cred);
+                }
             }
             return credentials;
         } catch (Exception e) {
