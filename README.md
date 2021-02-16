@@ -252,6 +252,25 @@ node {
 }
 ```
 
+It is also possible to use it as a UsernamePassword credentials, to do so, tag the secret with the desired `username`:  
+```bash
+az keyvault secret set-attributes --vault-name my-vault --name github-pat --tags username=github-user
+```
+
+Scripted Pipeline:  
+```groovy
+job('my example') {
+    scm {
+        git {
+            remote {
+                github('my-repo', 'https')
+                credentials('github-pat')
+            }
+        }
+    }
+}
+```
+
 ### SecretSource
 
 The plugin allows JCasC to interpolate string secrets from Azure KeyVault.
