@@ -18,7 +18,6 @@ In the Jenkins **Configure System** page, configure the following two options in
 * **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are: 
     - **Microsoft Azure Service Principal**
     - **Managed Identities for Azure Resources**
-    - **SystemAssigned Identities for Azure Resources**
 
 ### Via configuration-as-code
 
@@ -257,7 +256,7 @@ node {
 
 It is also possible to use it as a UsernamePassword credentials, to do so, tag the secret with the desired `username`:  
 ```bash
-az keyvault secret set-attributes --vault-name my-vault --name github-pat --tags username=github-user
+az keyvault secret set --vault-name my-vault --name github-pat --value my-pat --tags username=github-user
 ```
 
 Scripted Pipeline:  
