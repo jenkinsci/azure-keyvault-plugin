@@ -17,7 +17,7 @@ In the Jenkins **Configure System** page, configure the following two options in
 * **Key Vault URL** - The url where your keyvault resides (e.g. `https://myvault.vault.azure.net/`)
 * **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are: 
     - **Microsoft Azure Service Principal**
-    - **Managed Identities for Azure Resources**
+    - **Managed Identities for Azure Resources** (both user and system assigned)
 
 ### Via configuration-as-code
 
@@ -53,7 +53,7 @@ URL:
 -Djenkins.azure-keyvault.url=https://my.vault.azure.net
 ```
 
-User Assigned Managed Identity or System Assigned Identity:
+User or System Assigned Managed Identity:
 
 ```bash
 -Djenkins.azure-keyvault.uami.enabled=true
@@ -76,7 +76,7 @@ URL:
 AZURE_KEYVAULT_URL=https://my.vault.azure.net
 ```
 
-User Assigned Managed Identity or System Assigned Identity:
+User or System Assigned Managed Identity:
 
 ```bash
 AZURE_KEYVAULT_UAMI_ENABLED=true
