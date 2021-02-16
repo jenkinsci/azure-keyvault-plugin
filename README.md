@@ -15,7 +15,9 @@ The plugin acts as an Azure Active Directory Application and must be configured 
 
 In the Jenkins **Configure System** page, configure the following two options in the **Azure Key Vault Plugin** section
 * **Key Vault URL** - The url where your keyvault resides (e.g. `https://myvault.vault.azure.net/`)
-* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are: **Microsoft Azure Service Principal** and **Managed Identities for Azure Resources**.
+* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are: 
+    - **Microsoft Azure Service Principal**
+    - **Managed Identities for Azure Resources**
 
 ### Via configuration-as-code
 
@@ -51,7 +53,7 @@ URL:
 -Djenkins.azure-keyvault.url=https://my.vault.azure.net
 ```
 
-User Assigned Managed Identity:
+User Assigned Managed Identity or System Assigned Identity:
 
 ```bash
 -Djenkins.azure-keyvault.uami.enabled=true
@@ -74,7 +76,7 @@ URL:
 AZURE_KEYVAULT_URL=https://my.vault.azure.net
 ```
 
-User Assigned Managed Identity:
+User Assigned Managed Identity or System Assigned Identity:
 
 ```bash
 AZURE_KEYVAULT_UAMI_ENABLED=true
@@ -248,6 +250,25 @@ Scripted Pipeline:
 node {
     withCredentials([string(credentialsId: 'github-api-token', variable: 'GITHUB_API_TOKEN')]) {
         echo '$GITHUB_API_TOKEN'
+    }
+}
+```
+
+It is also possible to use it as a UsernamePassword credentials, to do so, tag the secret with the desired `username`:  
+```bash
+az keyvault secret set --vault-name my-vault --name github-pat --value my-pat --tags username=github-user
+```
+
+Scripted Pipeline:  
+```groovy
+job('my example') {
+    scm {
+        git {
+            remote {
+                github('my-repo', 'https')
+                credentials('github-pat')
+            }
+        }
     }
 }
 ```
