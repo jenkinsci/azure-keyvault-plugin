@@ -9,6 +9,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Util;
 import hudson.util.Secret;
+import org.jvnet.localizer.ResourceBundleHolder;
 
 
 public class AzureKeyVaultUsernamePasswordCredentials extends BaseSecretCredentials implements StandardUsernamePasswordCredentials {
@@ -55,7 +56,7 @@ public class AzureKeyVaultUsernamePasswordCredentials extends BaseSecretCredenti
         @NonNull
         @Override
         public String getDisplayName() {
-            return Messages.UsernamePasswordCredentialsImpl_DisplayName();
+            return ResourceBundleHolder.get(Messages.class).format("UsernamePasswordCredentialsImpl.DisplayName");
         }
 
         /**
