@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.azure.core.credential.TokenCredential;
-import com.azure.core.http.rest.PagedIterable;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.SecretProperties;
 import com.cloudbees.plugins.credentials.Credentials;
@@ -105,11 +104,10 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             SecretClient client = AzureCredentials.createKeyVaultClient(keyVaultCredentials, azureKeyVaultGlobalConfiguration.getKeyVaultURL());
 
             List<IdCredentials> credentials = new ArrayList<>();
-            PagedIterable<SecretProperties> secretItems = client.listPropertiesOfSecrets();
-            for (SecretProperties secretItem : secretItems) {
+            for (SecretProperties secretItem : client.listPropertiesOfSecrets()) {
                 String id = secretItem.getId();
                 Map<String, String> tags = secretItem.getTags();
-                if (tags.containsKey("username")) {
+                if (tags != null && tags.containsKey("username")) {
                     AzureKeyVaultUsernamePasswordCredentials cred = new AzureKeyVaultUsernamePasswordCredentials(CredentialsScope.GLOBAL, getSecretName(id), tags.get("username"), id, credentialID, id);
                     credentials.add(cred);
                 } else {
