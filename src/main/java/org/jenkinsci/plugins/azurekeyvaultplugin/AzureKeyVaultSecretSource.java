@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.azure.core.credential.TokenCredential;
+import com.azure.core.exception.ResourceNotFoundException;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import com.microsoft.azure.util.AzureCredentials;
@@ -32,12 +33,12 @@ public class AzureKeyVaultSecretSource extends SecretSource {
 
         SecretClient client = AzureCredentials.createKeyVaultClient(keyVaultCredentials, azureKeyVaultGlobalConfiguration.getKeyVaultURL());
 
-        KeyVaultSecret secretBundle = client.getSecret(secret);
-        if (secretBundle != null) {
+        try {
+            KeyVaultSecret secretBundle = client.getSecret(secret);
             return Optional.of(secretBundle.getValue());
+        } catch (ResourceNotFoundException ignored) {
+            LOGGER.info("Couldn't find secret: " + secret);
+            return Optional.empty();
         }
-
-        LOGGER.info("Couldn't find secret: " + secret);
-        return Optional.empty();
     }
 }
