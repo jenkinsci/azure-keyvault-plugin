@@ -77,7 +77,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>azure-credentials</artifactId>
-      <version>9999-SNAPSHOT</version>
+      <version>181.v00b0d97d2686</version>
     </dependency>
 
     <!-- optional deps -->
