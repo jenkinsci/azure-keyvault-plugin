@@ -14,6 +14,7 @@ import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
 import hudson.model.Run;
+import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
@@ -84,6 +85,7 @@ public class AzureKeyVaultCredentialRetriever {
             credential = new ClientSecretCredentialBuilder()
                     .clientId(azureCredential.getClientId())
                     .clientSecret(azureCredential.getPlainClientSecret())
+                    .httpClient(HttpClientRetriever.get())
                     .tenantId(azureCredential.getTenant())
                     .build();
         }
