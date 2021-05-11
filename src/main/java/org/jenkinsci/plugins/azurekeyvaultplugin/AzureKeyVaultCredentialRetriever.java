@@ -43,6 +43,7 @@ public class AzureKeyVaultCredentialRetriever {
             credential = new ClientSecretCredentialBuilder()
                     .clientId(azureCredentials.getClientId())
                     .clientSecret(azureCredentials.getPlainClientSecret())
+                    .httpClient(HttpClientRetriever.get())
                     .tenantId(azureCredentials.getTenant())
                     .build();
         } else if (cred instanceof AzureImdsCredentials) {

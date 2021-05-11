@@ -40,6 +40,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
+import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -192,6 +193,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             return new ClientSecretCredentialBuilder()
                     .clientId(getApplicationID())
                     .clientSecret(applicationSecret)
+                    .httpClient(HttpClientRetriever.get())
                     .tenantId(tenantId)
                     .build();
         }
