@@ -7,8 +7,14 @@
         <f:entry title="Credential ID" field="credentialID">
             <c:select />
         </f:entry>
+
         <f:validateButton
             title="${%Test Connection}" progress="${%Testing...}"
             method="testConnection" with="keyVaultURL,credentialID" />
+
+        <f:validateButton
+                title="${%Reload cache}" progress="${%Testing...}"
+                method="reloadCache" />
+
     </f:section>
 </j:jelly>

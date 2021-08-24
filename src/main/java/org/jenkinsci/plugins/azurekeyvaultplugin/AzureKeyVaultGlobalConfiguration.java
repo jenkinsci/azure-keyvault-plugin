@@ -194,6 +194,23 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     }
 
     @POST
+    public FormValidation doReloadCache() {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+
+        if (keyVaultURL == null) {
+            return FormValidation.error("Key vault url is required");
+        }
+
+        if (credentialID == null) {
+            return FormValidation.error("Credential ID is required");
+        }
+
+        refresh();
+
+        return FormValidation.ok("Cache reloaded");
+    }
+
+    @POST
     @SuppressWarnings("unused")
     public FormValidation doTestConnection(
             @QueryParameter("keyVaultURL") final String keyVaultURL,
