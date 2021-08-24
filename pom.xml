@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.18</version>
+    <version>4.24</version>
     <relativePath />
   </parent>
   <artifactId>azure-keyvault</artifactId>
@@ -63,7 +63,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-2.277.x</artifactId>
-        <version>876.vc43b4c6423b6</version>
+        <version>924.vda78166e6655</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -82,7 +82,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>azure-credentials</artifactId>
-      <version>181.v00b0d97d2686</version>
+      <version>182.v3ccd4a755864</version>
     </dependency>
 
     <!-- optional deps -->
@@ -117,7 +117,6 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>credentials-binding</artifactId>
-      <version>1.26</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -148,7 +147,7 @@
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
               <artifactId>checkstyle</artifactId>
-              <version>8.42</version>
+              <version>8.45.1</version>
             </dependency>
           </dependencies>
         </plugin>
