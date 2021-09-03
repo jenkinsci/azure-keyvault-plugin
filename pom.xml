@@ -85,6 +85,11 @@
       <version>182.v3ccd4a755864</version>
     </dependency>
 
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>caffeine-api</artifactId>
+    </dependency>
+
     <!-- optional deps -->
     <dependency>
       <groupId>io.jenkins</groupId>

@@ -8,8 +8,9 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Suppliers;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.keyvault.SecretStringCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,8 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.GlobalConfiguration;
@@ -38,18 +37,18 @@ import org.apache.commons.lang3.StringUtils;
 public class AzureCredentialsProvider extends CredentialsProvider {
     private static final Logger LOG = Logger.getLogger(AzureCredentialsProvider.class.getName());
 
+    private static final String CACHE_KEY = "key";
+
     private final AzureCredentialsStore store = new AzureCredentialsStore(this);
 
-    private Supplier<Collection<IdCredentials>> credentialsSupplier =
-            memoizeWithExpiration(AzureCredentialsProvider::fetchCredentials, Duration.ofMinutes(5));
-
-    private static <T> Supplier<T> memoizeWithExpiration(Supplier<T> base, Duration duration) {
-        return Suppliers.memoizeWithExpiration(base::get, duration.toMillis(), TimeUnit.MILLISECONDS)::get;
-    }
+    private final LoadingCache<String, Collection<IdCredentials>> cache = Caffeine.newBuilder()
+        .maximumSize(1L)
+        .expireAfterWrite(Duration.ofMinutes(120))
+        .refreshAfterWrite(Duration.ofMinutes(10))
+        .build(key -> fetchCredentials());
 
     public void refreshCredentials() {
-        credentialsSupplier =
-                memoizeWithExpiration(AzureCredentialsProvider::fetchCredentials, Duration.ofMinutes(5));
+        cache.refresh(CACHE_KEY);
     }
 
     @NonNull
@@ -59,7 +58,12 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         if (ACL.SYSTEM.equals(authentication)) {
             final ArrayList<C> list = new ArrayList<>();
             try {
-                for (IdCredentials credential : credentialsSupplier.get()) {
+                Collection<IdCredentials> credentials = cache.get(CACHE_KEY);
+                if (credentials == null) {
+                    throw new IllegalStateException("Cache is not working");
+                }
+
+                for (IdCredentials credential : credentials) {
                     if (aClass.isAssignableFrom(credential.getClass())) {
                         // cast to keep generics happy even though we are assignable..
                         list.add(aClass.cast(credential));
