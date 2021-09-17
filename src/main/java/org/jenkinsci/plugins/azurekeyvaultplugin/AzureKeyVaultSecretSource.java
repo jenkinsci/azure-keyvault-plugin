@@ -5,6 +5,7 @@ import com.azure.core.exception.ResourceNotFoundException;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.jenkins.keyvault.SecretClientCache;
 import hudson.Extension;
 import io.jenkins.plugins.casc.SecretSource;
 import java.util.Optional;
@@ -25,13 +26,13 @@ public class AzureKeyVaultSecretSource extends SecretSource {
         }
 
         String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
-        TokenCredential keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
+        TokenCredential keyVaultCredentials = AzureCredentials.getSystemCredentialById(credentialID);
         if (keyVaultCredentials == null) {
             LOGGER.info("No AzureKeyVault credentials found, skipping jcasc secret resolution");
             return Optional.empty();
         }
 
-        SecretClient client = AzureCredentials.createKeyVaultClient(keyVaultCredentials, azureKeyVaultGlobalConfiguration.getKeyVaultURL());
+        SecretClient client = SecretClientCache.get(credentialID, azureKeyVaultGlobalConfiguration.getKeyVaultURL());
 
         try {
             KeyVaultSecret secretBundle = client.getSecret(secret);
