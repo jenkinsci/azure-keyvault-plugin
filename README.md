@@ -5,23 +5,23 @@
 [![GitHub release][github-release-badge]][github-release]
 [![Jenkins Plugin Installs][plugin-install-badge]][plugin]
 
-This plugin enables Jenkins to fetch secrets from Azure Keyvault and inject them directly into build jobs.
+This plugin enables Jenkins to fetch secrets from Azure Key Vault and inject them directly into build jobs.
 It works similarly to the [Credential Binding Plugin](https://plugins.jenkins.io/credentials-binding/) and borrows much from the [Hashicorp Vault Plugin](https://plugins.jenkins.io/hashicorp-vault-plugin/).
-The plugin acts as an Azure Active Directory Application and must be configured with a valid credential. Additional details [here](https://docs.microsoft.com/en-us/azure/app-service-mobile/app-service-mobile-how-to-configure-active-directory-authentication#optional-configure-a-native-client-application).
+The plugin acts as an Azure Active Directory Application and must be configured with a valid credential.
 
 ## System Configuration
 
 ### Via UI
 
 In the Jenkins **Configure System** page, configure the following two options in the **Azure Key Vault Plugin** section
-* **Key Vault URL** - The url where your keyvault resides (e.g. `https://myvault.vault.azure.net/`)
+* **Key Vault URL** - The url where your Key Vault resides (e.g. `https://myvault.vault.azure.net/`)
 * **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are: 
-    - **Microsoft Azure Service Principal**
-    - **Managed Identities for Azure Resources** (both user and system assigned)
+    - **Azure Service Principal**
+    - **Azure Managed Identity** (both user and system assigned)
 
 ### Via configuration-as-code
 
-This plugin supports the [configuration as code](https://github.com/jenkinsci/configuration-as-code-plugin/) plugin:
+This plugin supports the [configuration as code](https://plugins.jenkins.io/configuration-as-code/) plugin:
 
 Example yaml:
 ```yaml
@@ -212,17 +212,18 @@ pipeline {
 }
 ```
 
-The shell command above will convert the PFX file to a pem key file (also containing the cert), note that Azure Key Vault removes the password
+The shell command above will convert the PFX file to a pem key file (also containing the certificate), note that Azure Key Vault removes the password
 on the pfx when you import it, if you're importing it back into Azure somewhere else you may need to convert it to pem and convert back to a pfx with a password.
 
-### Azure Key Vault Credentials Provider (Beta)
+### Azure Key Vault Credentials Provider
 
-This plugin also enables the retrieval of Secrets directly from Azure Key Vault. After the configuration is set up, secrets from the key vault can 
-be viewed in the credentials page like this:
+This plugin enables the retrieval of Secrets directly from Azure Key Vault.
+After the configuration is set up, secrets from the key vault can be viewed in the credentials page like this:
 
 ![provider](./docs/image/provider.png)
 
-*Note* These credentials are read-only and metadata caching(5 minutes) which means newly created secrets may not be here immediately.
+*Note* These credentials are read-only and metadata caching(10 minutes) means newly created secrets may not be here immediately.
+You can reload the cache on the system configuration page if you need a new secret to appear.
 
 Use these credentials just as other normal credentials in Jenkins.
 
@@ -254,7 +255,7 @@ node {
 }
 ```
 
-It is also possible to use it as a UsernamePassword credentials, to do so, tag the secret with the desired `username`:  
+It is also possible to use it as a 'Username with password' credentials, to do so, tag the secret with the desired `username`:  
 ```bash
 az keyvault secret set --vault-name my-vault --name github-pat --value my-pat --tags username=github-user
 ```
@@ -275,7 +276,7 @@ job('my example') {
 
 ### SecretSource
 
-The plugin allows JCasC to interpolate string secrets from Azure KeyVault.
+The plugin allows the [Configuration as Code plugin](https://plugins.jenkins.io/configuration-as-code) to interpolate string secrets from Azure KeyVault.
 
 #### Example
 
