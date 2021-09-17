@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
-import com.azure.core.credential.TokenCredential;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsScope;
@@ -9,6 +8,7 @@ import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
+import com.microsoft.jenkins.keyvault.SecretClientCache;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Item;
@@ -227,9 +227,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         }
 
         try {
-            TokenCredential keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
-
-            SecretClient client = AzureCredentials.createKeyVaultClient(keyVaultCredentials, keyVaultURL);
+            SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
 
             Long numberOfSecrets = client.listPropertiesOfSecrets().stream().count();
             return FormValidation.ok(String.format("Success, found %d secrets in the vault", numberOfSecrets));

@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
-import com.azure.core.credential.TokenCredential;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.SecretProperties;
 import com.cloudbees.plugins.credentials.Credentials;
@@ -11,7 +10,7 @@ import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
-import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.jenkins.keyvault.SecretClientCache;
 import com.microsoft.jenkins.keyvault.SecretStringCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -93,26 +92,24 @@ public class AzureCredentialsProvider extends CredentialsProvider {
     }
 
     private static Collection<IdCredentials> fetchCredentials() {
-        AzureKeyVaultGlobalConfiguration azureKeyVaultGlobalConfiguration = GlobalConfiguration.all().get(AzureKeyVaultGlobalConfiguration.class);
+        AzureKeyVaultGlobalConfiguration azureKeyVaultGlobalConfiguration = GlobalConfiguration.all()
+            .get(AzureKeyVaultGlobalConfiguration.class);
         if (azureKeyVaultGlobalConfiguration == null) {
             throw new AzureKeyVaultException("No global key vault url configured.");
         }
 
         String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
-        TokenCredential keyVaultCredentials = AzureKeyVaultCredentialRetriever.getCredentialById(credentialID);
-        if (keyVaultCredentials == null) {
-            return Collections.emptyList();
-        }
-
         try {
-            SecretClient client = AzureCredentials.createKeyVaultClient(keyVaultCredentials, azureKeyVaultGlobalConfiguration.getKeyVaultURL());
+            SecretClient client = SecretClientCache.get(credentialID, azureKeyVaultGlobalConfiguration.getKeyVaultURL());
 
             List<IdCredentials> credentials = new ArrayList<>();
             for (SecretProperties secretItem : client.listPropertiesOfSecrets()) {
                 String id = secretItem.getId();
                 Map<String, String> tags = secretItem.getTags();
                 if (tags != null && tags.containsKey("username")) {
-                    AzureKeyVaultUsernamePasswordCredentials cred = new AzureKeyVaultUsernamePasswordCredentials(CredentialsScope.GLOBAL, getSecretName(id), tags.get("username"), id, credentialID, id);
+                    AzureKeyVaultUsernamePasswordCredentials cred = new AzureKeyVaultUsernamePasswordCredentials(
+                        CredentialsScope.GLOBAL, getSecretName(id), tags.get("username"), id, credentialID, id
+                    );
                     credentials.add(cred);
                 } else {
                     SecretStringCredentials cred = new SecretStringCredentials(CredentialsScope.GLOBAL, getSecretName(id), id, credentialID, id);

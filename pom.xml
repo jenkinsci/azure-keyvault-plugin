@@ -63,7 +63,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-2.277.x</artifactId>
-        <version>924.vda78166e6655</version>
+        <version>950.v396cb834de1e</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -82,7 +82,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>azure-credentials</artifactId>
-      <version>182.v3ccd4a755864</version>
+      <version>190.v059127ae17bb</version>
     </dependency>
 
     <dependency>
