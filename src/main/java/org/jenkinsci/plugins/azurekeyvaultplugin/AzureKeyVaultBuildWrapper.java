@@ -186,7 +186,7 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         if (StringUtils.isNotEmpty(applicationSecret)) {
             if (StringUtils.isEmpty(tenantId)) {
                 throw new IllegalArgumentException("Set `tenantId` in your withAzureKeyVault configuration, or migrate " +
-                        "to using either a 'Microsoft Azure Service Principal' or a 'Managed Identities for Azure Resources'");
+                        "to using either a 'Azure Service Principal' or a 'Azure Managed Identity'");
             }
             // Allowed in pipeline, but not global  config
             LOGGER.fine("Using explicit application secret.");

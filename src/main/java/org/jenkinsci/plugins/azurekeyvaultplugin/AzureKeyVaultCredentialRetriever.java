@@ -45,7 +45,7 @@ public class AzureKeyVaultCredentialRetriever {
         } else {
             throw new AzureKeyVaultException("Could not determine the type for Secret id "
                     + credentialID +
-                    " only 'Microsoft Azure Service Principal' and 'Managed Identities for Azure Resources' are supported");
+                    " only 'Azure Service Principal' and 'Azure Managed Identity' are supported");
         }
 
         return credential;
