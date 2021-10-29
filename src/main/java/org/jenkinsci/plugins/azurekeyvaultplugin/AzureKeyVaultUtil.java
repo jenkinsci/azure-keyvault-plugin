@@ -43,7 +43,7 @@ import java.util.Enumeration;
 import javax.xml.bind.DatatypeConverter;
 import jenkins.model.Jenkins;
 
-class AzureKeyVaultUtil {
+public class AzureKeyVaultUtil {
 
     private static final char[] EMPTY_CHAR_ARRAY = new char[0];
     private static final String PKCS12 = "PKCS12";

@@ -22,6 +22,7 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.azurekeyvaultplugin.provider.global.AzureCredentialsProvider;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;

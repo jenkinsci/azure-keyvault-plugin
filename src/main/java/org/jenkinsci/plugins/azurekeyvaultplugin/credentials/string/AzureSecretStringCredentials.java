@@ -6,7 +6,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.util.Secret;
 import java.util.function.Supplier;
-import org.jenkinsci.plugins.azurekeyvaultplugin.AzureCredentialsProvider;
+import org.jenkinsci.plugins.azurekeyvaultplugin.provider.CredentialsProviderHelper;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.plaincredentials.impl.Messages;
 import org.jvnet.localizer.ResourceBundleHolder;
@@ -37,7 +37,7 @@ public class AzureSecretStringCredentials extends BaseStandardCredentials implem
 
         @Override
         public boolean isApplicable(CredentialsProvider provider) {
-            return provider instanceof AzureCredentialsProvider;
+            return CredentialsProviderHelper.isAzureCredentialsProvider(provider);
         }
     }
 }
