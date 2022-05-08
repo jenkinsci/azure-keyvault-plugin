@@ -39,8 +39,8 @@ import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
+import java.util.Base64;
 import java.util.Enumeration;
-import javax.xml.bind.DatatypeConverter;
 import jenkins.model.Jenkins;
 
 class AzureKeyVaultUtil {
@@ -51,7 +51,7 @@ class AzureKeyVaultUtil {
     static String convertAndWritePfxToDisk(FilePath workspace, String secret)
             throws IOException, GeneralSecurityException, InterruptedException {
         // Base64 decode the result and use a keystore to parse the key/cert
-        byte[] bytes = DatatypeConverter.parseBase64Binary(secret);
+        byte[] bytes = Base64.getDecoder().decode(secret);
         KeyStore ks = KeyStore.getInstance(PKCS12);
         ks.load(new ByteArrayInputStream(bytes), EMPTY_CHAR_ARRAY);
 
