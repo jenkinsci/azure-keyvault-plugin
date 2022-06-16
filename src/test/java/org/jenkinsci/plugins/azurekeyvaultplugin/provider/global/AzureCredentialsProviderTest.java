@@ -1,5 +1,7 @@
-package org.jenkinsci.plugins.azurekeyvaultplugin;
+package org.jenkinsci.plugins.azurekeyvaultplugin.provider.global;
 
+import org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultException;
+import org.jenkinsci.plugins.azurekeyvaultplugin.provider.global.AzureCredentialsProvider;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
