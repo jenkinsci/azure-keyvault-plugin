@@ -14,6 +14,7 @@ import com.cloudbees.plugins.credentials.domains.Domain;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
+import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.jenkins.keyvault.SecretClientCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -110,6 +111,11 @@ public class FolderAzureCredentialsProvider extends CredentialsProvider {
     @Override
     public <C extends Credentials> List<C> getCredentials(@NonNull Class<C> aClass, @Nullable ItemGroup itemGroup,
                                                           @Nullable Authentication authentication) {
+        // ignore Azure credentials for now to avoid stack overflow errors where we are looking up what we are authenticating as
+        if (aClass == AzureBaseCredentials.class) {
+            return Collections.emptyList();
+        }
+
         if (ACL.SYSTEM.equals(authentication)) {
             while (itemGroup != null) {
                 if (itemGroup instanceof AbstractFolder) {
