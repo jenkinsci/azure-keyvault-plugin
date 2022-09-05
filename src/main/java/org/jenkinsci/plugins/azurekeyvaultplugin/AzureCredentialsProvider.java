@@ -106,7 +106,11 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
         String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
         try {
-            SecretClient client = SecretClientCache.get(credentialID, azureKeyVaultGlobalConfiguration.getKeyVaultURL());
+            String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
+            if (StringUtils.isEmpty(keyVaultURL)) {
+                return Collections.emptyList();
+            }
+            SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
 
             List<IdCredentials> credentials = new ArrayList<>();
             for (SecretProperties secretItem : client.listPropertiesOfSecrets()) {

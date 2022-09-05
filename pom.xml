@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.24</version>
+    <version>4.47</version>
     <relativePath />
   </parent>
   <artifactId>azure-keyvault</artifactId>
@@ -15,8 +15,7 @@
   <properties>
     <changelist>9999-SNAPSHOT</changelist>
     <gitHubRepo>jenkinsci/azure-keyvault-plugin</gitHubRepo>
-    <jenkins.version>2.277.2</jenkins.version>
-    <java.level>8</java.level>
+    <jenkins.version>2.332.4</jenkins.version>
     <hpi.compatibleSinceVersion>2.0</hpi.compatibleSinceVersion>
   </properties>
 
@@ -30,13 +29,6 @@
       <url>https://opensource.org/licenses/MIT</url>
     </license>
   </licenses>
-
-  <developers>
-    <developer>
-      <id>timja</id>
-      <name>Tim Jacomb</name>
-    </developer>
-  </developers>
 
   <scm>
     <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
@@ -62,8 +54,8 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.277.x</artifactId>
-        <version>950.v396cb834de1e</version>
+        <artifactId>bom-2.332.x</artifactId>
+        <version>1607.va_c1576527071</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -73,16 +65,15 @@
   <dependencies>
     <!-- library deps -->
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.12.0</version>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
     </dependency>
 
     <!-- plugin deps -->
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>azure-credentials</artifactId>
-      <version>190.v059127ae17bb</version>
+      <version>216.ve0b_4a_485ffc2</version>
     </dependency>
 
     <dependency>
@@ -147,12 +138,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
-          <version>3.1.2</version>
+          <version>3.2.0</version>
           <dependencies>
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
               <artifactId>checkstyle</artifactId>
-              <version>8.45.1</version>
+              <version>9.3</version>
             </dependency>
           </dependencies>
         </plugin>
