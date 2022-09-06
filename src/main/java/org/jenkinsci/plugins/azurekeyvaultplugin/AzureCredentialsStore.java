@@ -40,6 +40,12 @@ public class AzureCredentialsStore extends CredentialsStore {
                 && Jenkins.get().getACL().hasPermission(authentication, permission);
     }
 
+
+    //@Override
+    public String getLayoutType() {
+        return "one-column";
+    }
+
     @NonNull
     @Override
     public List<Credentials> getCredentials(@NonNull Domain domain) {
