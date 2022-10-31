@@ -73,7 +73,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>azure-credentials</artifactId>
-      <version>216.ve0b_4a_485ffc2</version>
+      <version>242.vb_f9c4fa_6b_2b_6</version>
     </dependency>
 
     <dependency>
