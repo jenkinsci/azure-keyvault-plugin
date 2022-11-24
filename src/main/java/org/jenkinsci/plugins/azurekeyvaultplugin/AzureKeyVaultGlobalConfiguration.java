@@ -120,12 +120,8 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         }
 
         String clientSecret = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_CLIENT_SECRET", "jenkins.azure-keyvault.sp.client_secret")
-                .orElseThrow(IllegalArgumentException::new);
-        if(clientSecret == null) {
-            // If the user is setting the client secret via a mounted secret file, try to parse the file for the secret value
-            clientSecret = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_CLIENT_SECRET_FILE", "jenkins.azure-keyvault.sp.client_secret_file")
-                    .orElseThrow(IllegalArgumentException::new);
-        }
+                .orElse(getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_CLIENT_SECRET_FILE", "jenkins.azure-keyvault.sp.client_secret_file")
+                        .orElseThrow(IllegalArgumentException::new));
         String subscriptionId = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_SUBSCRIPTION_ID", "jenkins.azure-keyvault.sp.subscription_id")
                 .orElseThrow(IllegalArgumentException::new);
         String tenantId = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_TENANT_ID", "jenkins.azure-keyvault.sp.tenant_id")
@@ -176,7 +172,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         if (envResult != null) {
             Path pathToSecret = Paths.get(envResult);
             try {
-                return Optional.of(Files.readString(pathToSecret));
+                return Optional.of(Files.readAllLines(pathToSecret).get(0));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -186,7 +182,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         if (systemResult != null) {
             Path pathToSecret = Paths.get(systemResult);
             try {
-                return Optional.of(Files.readString(pathToSecret));
+                return Optional.of(Files.readAllLines(pathToSecret).get(0));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
