@@ -15,6 +15,9 @@ import hudson.model.Item;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -118,6 +121,11 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
 
         String clientSecret = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_CLIENT_SECRET", "jenkins.azure-keyvault.sp.client_secret")
                 .orElseThrow(IllegalArgumentException::new);
+        if(clientSecret == null) {
+            // If the user is setting the client secret via a mounted secret file, try to parse the file for the secret value
+            clientSecret = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_CLIENT_SECRET_FILE", "jenkins.azure-keyvault.sp.client_secret_file")
+                    .orElseThrow(IllegalArgumentException::new);
+        }
         String subscriptionId = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_SUBSCRIPTION_ID", "jenkins.azure-keyvault.sp.subscription_id")
                 .orElseThrow(IllegalArgumentException::new);
         String tenantId = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_TENANT_ID", "jenkins.azure-keyvault.sp.tenant_id")
@@ -158,6 +166,30 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         String systemResult = System.getProperty(systemProperty);
         if (systemResult != null) {
             return Optional.of(systemResult);
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<String> getPropertyByFile(String envVariable, String systemProperty) {
+        String envResult = System.getenv(envVariable);
+        if (envResult != null) {
+            Path pathToSecret = Paths.get(envResult);
+            try {
+                return Optional.of(Files.readString(pathToSecret));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        String systemResult = System.getProperty(systemProperty);
+        if (systemResult != null) {
+            Path pathToSecret = Paths.get(systemResult);
+            try {
+                return Optional.of(Files.readString(pathToSecret));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         return Optional.empty();
