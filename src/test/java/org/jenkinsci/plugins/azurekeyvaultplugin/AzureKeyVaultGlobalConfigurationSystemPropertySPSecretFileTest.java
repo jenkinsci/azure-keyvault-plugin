@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.azure.util.AzureImdsCredentials;
 import java.util.List;
 import org.junit.After;
 import org.junit.Before;
