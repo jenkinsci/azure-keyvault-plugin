@@ -59,7 +59,7 @@ public class AzureKeyVaultGlobalConfigurationSystemPropertySPSecretFileTest {
         // Test updating value
         System.setProperty("jenkins.azure-keyvault.url", "https://mine2.vault.azure.net");
         System.setProperty("jenkins.azure-keyvault.sp.client_id", "5678");
-        System.setProperty("jenkins.azure-keyvault.sp.client_secret", "99999");
+        System.setProperty("jenkins.azure-keyvault.sp.client_secret_file", "src/test/resources/org/jenkinsci/plugins/azurekeyvaultplugin/secretfile2");
         System.setProperty("jenkins.azure-keyvault.sp.subscription_id", "9999");
         System.setProperty("jenkins.azure-keyvault.sp.tenant_id", "11111");
 
