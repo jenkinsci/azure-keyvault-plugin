@@ -1,5 +1,17 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.microsoft.azure.util.AzureCredentials;
+import io.jenkins.plugins.casc.misc.EnvVarsRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.jvnet.hudson.test.JenkinsRule;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 public class AzureKeyVaultGlobalConfigurationEnvVarSPSecretFileTest {
 
 
