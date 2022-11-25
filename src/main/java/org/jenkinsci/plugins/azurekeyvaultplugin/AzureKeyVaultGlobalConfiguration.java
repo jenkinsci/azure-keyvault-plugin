@@ -15,6 +15,7 @@ import hudson.model.Item;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -174,7 +175,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
             try {
                 return Optional.of(Files.readAllLines(pathToSecret).get(0));
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(e);
             }
         }
 
@@ -184,7 +185,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
             try {
                 return Optional.of(Files.readAllLines(pathToSecret).get(0));
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(e);
             }
         }
 
