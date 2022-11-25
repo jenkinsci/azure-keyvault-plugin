@@ -120,7 +120,7 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         }
 
         String clientSecret = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_CLIENT_SECRET", "jenkins.azure-keyvault.sp.client_secret")
-                .orElse(getPropertyByFile("AZURE_KEYVAULT_SP_CLIENT_SECRET_FILE", "jenkins.azure-keyvault.sp.client_secret_file")
+                .orElseGet(() -> getPropertyByFile("AZURE_KEYVAULT_SP_CLIENT_SECRET_FILE", "jenkins.azure-keyvault.sp.client_secret_file")
                         .orElseThrow(IllegalArgumentException::new));
         String subscriptionId = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_SUBSCRIPTION_ID", "jenkins.azure-keyvault.sp.subscription_id")
                 .orElseThrow(IllegalArgumentException::new);
