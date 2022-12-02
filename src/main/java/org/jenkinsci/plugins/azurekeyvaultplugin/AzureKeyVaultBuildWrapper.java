@@ -180,5 +180,10 @@ public class AzureKeyVaultBuildWrapper extends Step {
         public String getFunctionName() {
             return "withAzureKeyvault";
         }
+
+        @Override
+        public boolean isAdvanced() {
+            return true;
+        }
     }
 }
