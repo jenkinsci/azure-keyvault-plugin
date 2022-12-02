@@ -24,52 +24,41 @@
 
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
-import com.azure.core.credential.TokenCredential;
-import com.azure.identity.ClientSecretCredentialBuilder;
-import com.azure.security.keyvault.secrets.SecretClient;
-import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
-import com.microsoft.azure.util.AzureCredentials;
-import hudson.EnvVars;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.console.ConsoleLogFilter;
-import hudson.model.AbstractProject;
 import hudson.model.Item;
 import hudson.model.Run;
-import hudson.model.TaskListener;
-import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.azuresdk.HttpClientRetriever;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import jenkins.tasks.SimpleBuildWrapper;
+import jenkins.YesNoMaybe;
 import org.apache.commons.lang3.StringUtils;
-import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.verb.POST;
 
+import javax.annotation.CheckForNull;
+import javax.security.auth.login.CredentialNotFoundException;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+
 import static hudson.Util.fixEmpty;
-import static java.lang.String.format;
-import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getCredentialById;
-import static org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultCredentialRetriever.getSecretBundle;
+import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 /**
  * Wraps a build with azure key vault secrets / certificates
+ * @deprecated use {@link AzureKeyVaultStep}
  */
-public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
+@Deprecated(forRemoval = true)
+public class AzureKeyVaultBuildWrapper extends Step {
 
     private static final Logger LOGGER = Logger.getLogger("Jenkins.AzureKeyVaultBuildWrapper");
 
     private final List<AzureKeyVaultSecret> azureKeyVaultSecrets;
-    private final List<String> valuesToMask = new ArrayList<>();
-
-    // Instances for this particular build job so they can override the global settings
     private String keyVaultURL;
     private String applicationID;
     private String applicationSecret;
@@ -130,162 +119,43 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
         this.tenantId = fixEmpty(tenantId);
     }
 
-    // Get the default value only if it is not overridden for this build
-    public String getKeyVaultURL() {
-        AzureKeyVaultGlobalConfiguration globalConfiguration = AzureKeyVaultGlobalConfiguration.get();
-
-        if (StringUtils.isNotEmpty(keyVaultURL)) {
-            return keyVaultURL;
-        }
-        if (StringUtils.isNotEmpty(globalConfiguration.getKeyVaultURL())) {
-            return globalConfiguration.getKeyVaultURL();
-        } else {
-            throw new AzureKeyVaultException("No key vault url configured, set one globally or in the build wrap step");
-        }
-    }
-
-    @Override
-    public ConsoleLogFilter createLoggerDecorator(@Nonnull final Run<?, ?> build) {
-        return new MaskingConsoleLogFilter(build.getCharset().name(), valuesToMask);
-    }
-
-
-    public TokenCredential getKeyVaultCredential(Run<?, ?> build) {
-        // Try override values
-        LOGGER.fine("Trying override credentials...");
-        TokenCredential credential = getKeyVaultCredential(build, this.applicationSecret, this.credentialID, this.tenantId);
-        if (credential != null) {
-            LOGGER.fine("Using override credentials");
-            return credential;
-        }
-
-        // Try global values
-        LOGGER.fine("Trying global credentials");
-        credential = getKeyVaultCredential(
-                build,
-                null,
-                AzureKeyVaultGlobalConfiguration.get().getCredentialID(),
-                null
-        );
-
-        if (credential != null) {
-            return credential;
-        }
-
-        throw new AzureKeyVaultException("Unable to find a valid credential with provided parameters");
-    }
-
-    @CheckForNull
-    public TokenCredential getKeyVaultCredential(Run<?, ?> build, String applicationSecret, String credentialID, String tenantId) {
-        if (StringUtils.isNotEmpty(credentialID)) {
-            LOGGER.fine("Fetching credentials by ID");
-            return getCredentialById(credentialID, build);
-        }
-
-        // Try AppID/Secret
-        if (StringUtils.isNotEmpty(applicationSecret)) {
-            if (StringUtils.isEmpty(tenantId)) {
-                throw new IllegalArgumentException("Set `tenantId` in your withAzureKeyVault configuration, or migrate " +
-                        "to using either a 'Azure Service Principal' or a 'Azure Managed Identity'");
-            }
-            // Allowed in pipeline, but not global  config
-            LOGGER.fine("Using explicit application secret.");
-            return new ClientSecretCredentialBuilder()
-                    .clientId(getApplicationID())
-                    .clientSecret(applicationSecret)
-                    .httpClient(HttpClientRetriever.get())
-                    .tenantId(tenantId)
-                    .build();
-        }
-
-        return null;
-    }
-
     public String getApplicationID() {
-        if (StringUtils.isNotEmpty(applicationID)) {
-            LOGGER.fine("Using override Application ID");
-            return applicationID;
-        }
-        return null;
+        return applicationID;
     }
 
     public List<AzureKeyVaultSecret> getAzureKeyVaultSecrets() {
         return azureKeyVaultSecrets;
     }
 
-    // Overridden for better type safety.
-    // If your plugin doesn't really define any property on Descriptor,
-    // you don't have to do this.
     @Override
-    public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl) super.getDescriptor();
-    }
+    public StepExecution start(StepContext context) throws Exception {
+        AzureKeyVaultGlobalConfiguration globalConfiguration = AzureKeyVaultGlobalConfiguration.get();
+        String resolvedKeyVaultUrl = firstNonNull(keyVaultURL, globalConfiguration.getKeyVaultURL());
 
-    private KeyVaultSecret getSecret(SecretClient client, AzureKeyVaultSecret secret) {
-        return getSecretBundle(client, secret);
-    }
-
-    public void setUp(Context context, Run<?, ?> build, FilePath workspace,
-                      Launcher launcher, TaskListener listener, EnvVars initialEnvironment) {
-        if (azureKeyVaultSecrets == null || azureKeyVaultSecrets.isEmpty()) {
-            return;
+        if (StringUtils.isEmpty(resolvedKeyVaultUrl)) {
+            throw new AzureKeyVaultException("No key vault url configured, set one globally or in the build wrap step");
         }
 
-        SecretClient client = AzureCredentials.createKeyVaultClient(getKeyVaultCredential(build), getKeyVaultURL());
+        String resolvedCredentialId = firstNonNull(credentialID, globalConfiguration.getCredentialID());
 
-        for (AzureKeyVaultSecret secret : azureKeyVaultSecrets) {
-            if (secret.isPassword()) {
-                KeyVaultSecret bundle = getSecret(client, secret);
-                if (bundle != null) {
-                    valuesToMask.add(bundle.getValue());
-                    context.env(secret.getEnvVariable(), bundle.getValue());
-                } else {
-                    throw new AzureKeyVaultException(
-                            format(
-                                    "Secret: %s not found in vault: %s",
-                                    secret.getName(),
-                                    getKeyVaultURL()
-                            )
-                    );
-                }
-            } else if (secret.isCertificate()) {
-                // Get Certificate from Keyvault as a Secret
-                KeyVaultSecret bundle = getSecret(client, secret);
-                if (bundle != null) {
-                    try {
-                        String path = AzureKeyVaultUtil.convertAndWritePfxToDisk(workspace, bundle.getValue());
-                        context.env(secret.getEnvVariable(), path);
-                    } catch (Exception e) {
-                        throw new AzureKeyVaultException(e.getMessage(), e);
-                    }
-                } else {
-                    throw new AzureKeyVaultException(
-                            format(
-                                    "Certificate: %s not found in vault: %s",
-                                    secret.getName(),
-                                    getKeyVaultURL()
-                            )
-                    );
-                }
-            }
+        if (StringUtils.isNotEmpty(applicationSecret)) {
+            // Implement some compatibility here
+            LOGGER.info("HITTING LEGACY CODE PATH");
         }
+
+        if  (StringUtils.isEmpty(resolvedCredentialId)) {
+            throw new CredentialNotFoundException("Unable to find a valid credential with provided parameters");
+        }
+
+        return new AzureKeyVaultStep.ExecutionImpl(context, resolvedKeyVaultUrl, resolvedCredentialId, azureKeyVaultSecrets);
     }
+
 
     /**
-     * Descriptor for {@link AzureKeyVaultBuildWrapper}. Used as a singleton.
-     * The class is marked as public so that it can be accessed from views.
-     *
-     * <p>
-     * for the actual HTML fragment for the configuration screen.
+     * Descriptor for {@link AzureKeyVaultStep}.
      */
-    @Extension
-    @Symbol("withAzureKeyvault")
-    public static final class DescriptorImpl extends BuildWrapperDescriptor {
-
-        public DescriptorImpl() {
-            super(AzureKeyVaultBuildWrapper.class);
-            load();
-        }
+    @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
+    public static class DescriptorImpl extends StepDescriptor {
 
         @SuppressWarnings("unused")
         @POST
@@ -293,16 +163,22 @@ public class AzureKeyVaultBuildWrapper extends SimpleBuildWrapper {
             return AzureKeyVaultUtil.doFillCredentialIDItems(context);
         }
 
-        @Override
-        public boolean isApplicable(AbstractProject<?, ?> item) {
-            return true;
-        }
-
         /**
-         * This human readable name is used in the snippet generator for pipeline.
+         * This human-readable name is used in the snippet generator for pipeline.
          */
+        @NonNull
         public String getDisplayName() {
             return "Bind credentials in Azure Key Vault to variables";
+        }
+
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
+            return Set.of(Run.class);
+        }
+
+        @Override
+        public String getFunctionName() {
+            return "withAzureKeyvault";
         }
     }
 }

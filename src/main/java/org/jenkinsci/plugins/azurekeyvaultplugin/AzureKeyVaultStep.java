@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 import com.azure.core.credential.TokenCredential;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
-import com.google.common.collect.ImmutableSet;
 import com.microsoft.azure.util.AzureCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
@@ -96,7 +95,7 @@ public class AzureKeyVaultStep extends Step {
     /**
      * Execution for {@link AzureKeyVaultStep}.
      */
-    private static class ExecutionImpl extends AbstractStepExecutionImpl {
+    static class ExecutionImpl extends AbstractStepExecutionImpl {
 
         private final String keyVaultURL;
         private final String credentialId;
@@ -237,7 +236,7 @@ public class AzureKeyVaultStep extends Step {
 
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class);
+            return Set.of(Run.class);
         }
 
     }
