@@ -236,6 +236,8 @@ on the pfx when you import it, if you're importing it back into Azure somewhere 
 
 ### Azure Key Vault Credentials Provider
 
+> Note: It is not supported to configure the credential provider with the Configuration as Code plugin *and* resolving credentials from Azure Key Vault in the same configuration file. Please use one of the other options (system properties, environment variables) if you want to retrieve secrets for use in Configuration as Code files
+
 This plugin enables the retrieval of Secrets directly from Azure Key Vault.
 After the configuration is set up, secrets from the key vault can be viewed in the credentials page like this:
 
