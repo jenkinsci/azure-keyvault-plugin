@@ -251,7 +251,7 @@ public class AzureKeyVaultStep extends Step {
          */
         @Override @NonNull
         public String getDisplayName() {
-            return "azureKeyVault";
+            return "Bind credentials in Azure Key Vault to environment variables";
         }
 
         @SuppressWarnings("unused")

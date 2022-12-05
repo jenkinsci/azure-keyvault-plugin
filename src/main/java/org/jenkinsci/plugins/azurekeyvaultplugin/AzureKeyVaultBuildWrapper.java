@@ -52,9 +52,7 @@ import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 /**
  * Wraps a build with azure key vault secrets / certificates
- * @deprecated use {@link AzureKeyVaultStep}
  */
-@Deprecated(forRemoval = true)
 public class AzureKeyVaultBuildWrapper extends Step {
 
     private static final Logger LOGGER = Logger.getLogger("Jenkins.AzureKeyVaultBuildWrapper");
@@ -140,18 +138,15 @@ public class AzureKeyVaultBuildWrapper extends Step {
         String resolvedCredentialId = firstNonNull(credentialID, globalConfiguration.getCredentialID());
 
         if (isLegacyAuth()) {
-            // Implement some compatibility here
-            LOGGER.info("HITTING LEGACY CODE PATH");
-
             TaskListener taskListener = context.get(TaskListener.class);
             PrintStream logger = taskListener.getLogger();
-            logger.println("*********************************\n" +
-                    "Deprecated: Use a credential ID instead of individual values for the service principal. " +
-                    "If you can't then please raise an issue at https://github.com/jenkinsci/azure-keyvault-plugin/issues. " +
+            logger.println("***************************************************************************************************\n" +
+                    "Deprecated: Use a credential ID instead of individual values for the service principal.\n" +
+                    "If you can't then please raise an issue at https://github.com/jenkinsci/azure-keyvault-plugin/issues.\n" +
                     "This will be removed at some point.\n" +
-                    "*********************************");
+                    "***************************************************************************************************");
 
-            return new AzureKeyVaultStep.ExecutionImpl(context, keyVaultURL, applicationID, applicationSecret, tenantId, azureKeyVaultSecrets);
+            return new AzureKeyVaultStep.ExecutionImpl(context, resolvedKeyVaultUrl, applicationID, applicationSecret, tenantId, azureKeyVaultSecrets);
         }
 
         if  (StringUtils.isEmpty(resolvedCredentialId)) {
@@ -183,7 +178,7 @@ public class AzureKeyVaultBuildWrapper extends Step {
          */
         @NonNull
         public String getDisplayName() {
-            return "Bind credentials in Azure Key Vault to variables";
+            return "Bind credentials in Azure Key Vault to environment variables";
         }
 
         @Override
@@ -191,14 +186,17 @@ public class AzureKeyVaultBuildWrapper extends Step {
             return Set.of(Run.class);
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
-        public String getFunctionName() {
-            return "withAzureKeyvault";
+        public boolean takesImplicitBlockArgument() {
+            return true;
         }
 
         @Override
-        public boolean isAdvanced() {
-            return true;
+        public String getFunctionName() {
+            return "withAzureKeyvault";
         }
     }
 }

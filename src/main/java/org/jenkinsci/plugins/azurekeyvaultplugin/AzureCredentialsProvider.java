@@ -107,7 +107,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
         try {
             String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
-            if (StringUtils.isEmpty(keyVaultURL)) {
+            if (StringUtils.isEmpty(keyVaultURL) || StringUtils.isEmpty(credentialID)) {
                 return Collections.emptyList();
             }
             SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
