@@ -1,30 +1,29 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:c="/lib/credentials" xmlns:f="/lib/form">
-  <f:section title="Azure Key Vault Build wrapper">
-
-    <f:block>
-      <table>
-        <f:entry title="Override Key Vault URL" field="keyVaultURLOverride">
-          <f:textbox />
-        </f:entry>
-        <f:entry title="Override Application ID" field="applicationIDOverride">
-          <f:textbox />
-        </f:entry>
-        <f:entry title="Override Application Secret" field="applicationSecretOverride">
-          <f:textbox />
-        </f:entry>
-        <f:entry title="Override Tenant ID" field="tenantIdOverride">
-          <f:textbox />
-        </f:entry>
-        <f:entry title="Override Credential ID" field="credentialIDOverride">
-          <c:select />
-        </f:entry>
-      </table>
-    </f:block>
-
-    <f:entry>
-      <f:repeatableProperty field="azureKeyVaultSecrets" minimum="1" maximum="1" header="Azure Key Vault Secret" add="Add a Key Vault secret"></f:repeatableProperty>
+    <f:description>
+        Secret values are masked on a best-effort basis to prevent <em>accidental</em> disclosure.
+    </f:description>
+    <f:entry title="Override Key Vault URL" field="keyVaultURLOverride">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="Override Credential ID" field="credentialIDOverride">
+        <c:select/>
     </f:entry>
 
-  </f:section>
+    <f:advanced title="${%Deprecated options}">
+        <f:entry title="Application ID" field="applicationIDOverride">
+            <f:textbox/>
+        </f:entry>
+        <f:entry title="Application Secret" field="applicationSecretOverride">
+            <f:password/>
+        </f:entry>
+        <f:entry title="Tenant ID" field="tenantIdOverride">
+            <f:textbox/>
+        </f:entry>
+    </f:advanced>
+
+    <f:entry>
+        <f:repeatableProperty field="azureKeyVaultSecrets" minimum="1" />
+    </f:entry>
+
 </j:jelly>
