@@ -28,7 +28,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
+import java.io.PrintStream;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+import javax.annotation.CheckForNull;
+import javax.security.auth.login.CredentialNotFoundException;
 import jenkins.YesNoMaybe;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.Step;
@@ -39,12 +46,6 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.verb.POST;
-
-import javax.annotation.CheckForNull;
-import javax.security.auth.login.CredentialNotFoundException;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Logger;
 
 import static hudson.Util.fixEmpty;
 import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
@@ -138,9 +139,19 @@ public class AzureKeyVaultBuildWrapper extends Step {
 
         String resolvedCredentialId = firstNonNull(credentialID, globalConfiguration.getCredentialID());
 
-        if (StringUtils.isNotEmpty(applicationSecret)) {
+        if (isLegacyAuth()) {
             // Implement some compatibility here
             LOGGER.info("HITTING LEGACY CODE PATH");
+
+            TaskListener taskListener = context.get(TaskListener.class);
+            PrintStream logger = taskListener.getLogger();
+            logger.println("*********************************\n" +
+                    "Deprecated: Use a credential ID instead of individual values for the service principal. " +
+                    "If you can't then please raise an issue at https://github.com/jenkinsci/azure-keyvault-plugin/issues. " +
+                    "This will be removed at some point.\n" +
+                    "*********************************");
+
+            return new AzureKeyVaultStep.ExecutionImpl(context, keyVaultURL, applicationID, applicationSecret, tenantId, azureKeyVaultSecrets);
         }
 
         if  (StringUtils.isEmpty(resolvedCredentialId)) {
@@ -148,6 +159,10 @@ public class AzureKeyVaultBuildWrapper extends Step {
         }
 
         return new AzureKeyVaultStep.ExecutionImpl(context, resolvedKeyVaultUrl, resolvedCredentialId, azureKeyVaultSecrets);
+    }
+
+    private boolean isLegacyAuth() {
+        return StringUtils.isNotEmpty(applicationID) && StringUtils.isNotEmpty(applicationSecret) && StringUtils.isNotEmpty(tenantId);
     }
 
 

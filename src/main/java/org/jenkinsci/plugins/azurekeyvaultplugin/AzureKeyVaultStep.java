@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.azure.core.credential.TokenCredential;
+import com.azure.identity.ClientSecretCredentialBuilder;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import com.microsoft.azure.util.AzureCredentials;
@@ -12,6 +13,7 @@ import hudson.console.ConsoleLogFilter;
 import hudson.model.Item;
 import hudson.model.Run;
 import hudson.util.ListBoxModel;
+import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -98,8 +100,14 @@ public class AzureKeyVaultStep extends Step {
     static class ExecutionImpl extends AbstractStepExecutionImpl {
 
         private final String keyVaultURL;
-        private final String credentialId;
+        private String credentialId;
         private final List<AzureKeyVaultSecret> azureKeyVaultSecrets;
+
+        // legacy section
+        private String applicationId;
+        private String applicationSecret;
+        private String tenantId;
+        // end legacy section
 
         ExecutionImpl(
                 StepContext context,
@@ -113,7 +121,41 @@ public class AzureKeyVaultStep extends Step {
             this.azureKeyVaultSecrets = azureKeyVaultSecrets;
         }
 
+        ExecutionImpl(
+                StepContext context,
+                String keyVaultURL,
+                String applicationId,
+                String applicationSecret,
+                String tenantId,
+                List<AzureKeyVaultSecret> azureKeyVaultSecrets
+        ) {
+            super(context);
+            this.keyVaultURL = keyVaultURL;
+            this.applicationId = applicationId;
+            this.applicationSecret = applicationSecret;
+            this.tenantId = tenantId;
+            this.azureKeyVaultSecrets = azureKeyVaultSecrets;
+        }
+
+
         private static final long serialVersionUID = 1L;
+
+        private boolean isLegacyAuth() {
+            return StringUtils.isNotEmpty(applicationId) && StringUtils.isNotEmpty(applicationSecret) && StringUtils.isNotEmpty(tenantId);
+        }
+
+        private TokenCredential getCredential(Run<?, ?> run) {
+            if (isLegacyAuth()) {
+                return new ClientSecretCredentialBuilder()
+                        .clientId(applicationId)
+                        .clientSecret(applicationSecret)
+                        .httpClient(HttpClientRetriever.get())
+                        .tenantId(tenantId)
+                        .build();
+            }
+
+            return getCredentialById(credentialId, run);
+        }
 
         /**
          * {@inheritDoc}
@@ -124,7 +166,7 @@ public class AzureKeyVaultStep extends Step {
             BodyInvoker invoker = context.newBodyInvoker().withCallback(BodyExecutionCallback.wrap(context));
 
             Run<?,?> run = context.get(Run.class);
-            TokenCredential credential = getCredentialById(credentialId, run);
+            TokenCredential credential = getCredential(run);
 
             Map<String, String> secrets = getSecretsMap(credential, keyVaultURL, azureKeyVaultSecrets);
 
