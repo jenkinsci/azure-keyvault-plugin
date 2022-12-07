@@ -33,6 +33,7 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.sshuserprivatekey.AzureSSHUserPrivateKeyCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string.AzureSecretStringCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.usernamepassword.AzureUsernamePasswordCredentials;
 
@@ -70,7 +71,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
                 for (IdCredentials credential : credentials) {
                     if (aClass.isAssignableFrom(credential.getClass())) {
-                        // cast to keep generics happy even though we are assignable..
+                        // cast to keep generics happy even though we are assignable
                         list.add(aClass.cast(credential));
                     }
                     LOG.log(Level.FINEST, "getCredentials {0} does not match", credential.getId());
@@ -132,15 +133,28 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     case "string": {
                         AzureSecretStringCredentials cred = new AzureSecretStringCredentials(getSecretName(id), "", new KeyVaultSecretRetriever(client, id));
                         credentials.add(cred);
+                        break;
                     }
-                    break;
                     case "username": {
                         AzureUsernamePasswordCredentials cred = new AzureUsernamePasswordCredentials(
                                 getSecretName(id), tags.get("username"), "", new KeyVaultSecretRetriever(client, id)
                         );
                         credentials.add(cred);
+                        break;
                     }
-                    break;
+                    case "sshUserPrivateKey": {
+                        String usernameSecretTag = tags.get("username-is-secret");
+                        boolean usernameSecret = false;
+                        if (StringUtils.isNotBlank(usernameSecretTag)) {
+                            usernameSecret = Boolean.parseBoolean(usernameSecretTag);
+                        }
+
+                        AzureSSHUserPrivateKeyCredentials cred = new AzureSSHUserPrivateKeyCredentials(
+                                getSecretName(id), "", tags.get("username"), usernameSecret, new KeyVaultSecretRetriever(client, id)
+                        );
+                        credentials.add(cred);
+                        break;
+                    }
                     default: {
                         throw new IllegalStateException("Unknown type: " + type);
                     }

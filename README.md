@@ -248,6 +248,16 @@ You can reload the cache on the system configuration page if you need a new secr
 
 Use these credentials just as other normal credentials in Jenkins.
 
+There are multiple supported credential types, `string` is used by default.
+To use a different type add a tag called `type` with one of the below values:
+
+- `string` - Secret text
+- `username` - Username with password
+  - add a tag `username` for the username of the credential
+- `sshUserPrivateKey` - SSH Private key
+  - add a tag `username` for the username of the credential
+  - (optional) add a tag `username-is-secret` and set it to true to hide the username in the build logs 
+
 Declarative Pipeline:
 
 ```groovy
@@ -276,9 +286,13 @@ node {
 }
 ```
 
-It is also possible to use it as a 'Username with password' credentials, to do so, tag the secret with the desired `username`:  
+#### Username with password
+
 ```bash
-az keyvault secret set --vault-name my-vault --name github-pat --value my-pat --tags username=github-user
+az keyvault secret set --vault-name my-vault \
+  --name github-pat \
+  --value my-pat \
+  --tags username=github-user type=username
 ```
 
 Scripted Pipeline:  
@@ -294,6 +308,50 @@ job('my example') {
     }
 }
 ```
+
+#### SSH Username with private key
+
+```bash
+az keyvault secret set --tags type=sshUserPrivateKey username=my-username \
+  --vault-name my-vault \
+  --name test-ssh \
+  -f ~/.ssh/my-ssh-key
+```
+
+Scripted pipeline:
+
+```bash
+# This is a docker image that can be used to test out this feature
+docker run --rm -it --publish 2222:2222 \
+  -e "PUBLIC_KEY=my-public-key" linuxserver/openssh-server
+```
+
+```groovy
+node {
+    withCredentials([sshUserPrivateKey(credentialsId: "test-ssh", keyFileVariable: "my_ssh_key", usernameVariable: "my_username")]) {
+     sh 'ssh -i $my_ssh_key -p 2222 $my_username@localhost "uname -r"'
+    }
+}
+```
+
+Declarative pipeline:
+
+```groovy
+pipeline {
+    agent any
+    environment {
+        SSH_PRIVATE_KEY = credentials('test-ssh')
+    }
+    stages {
+        stage('Foo') {
+            steps {
+                sh 'ssh -i $SSH_PRIVATE_KEY -p 2222 $SSH_PRIVATE_KEY_USR@localhost "cat world"'
+            }
+        }
+    }
+}
+```
+
 
 ### SecretSource
 
