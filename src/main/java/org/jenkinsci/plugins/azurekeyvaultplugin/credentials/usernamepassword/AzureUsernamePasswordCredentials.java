@@ -57,7 +57,7 @@ public class AzureUsernamePasswordCredentials extends BaseStandardCredentials im
          */
         @Override
         public String getIconClassName() {
-            return "icon-credentials-userpass";
+            return "symbol-id-card";
         }
 
         @Override
