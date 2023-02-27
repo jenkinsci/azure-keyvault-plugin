@@ -15,7 +15,6 @@ import hudson.model.Run;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +24,7 @@ import javax.annotation.Nonnull;
 import javax.security.auth.login.CredentialNotFoundException;
 import jenkins.YesNoMaybe;
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.plugins.credentialsbinding.masking.SecretPatterns;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.BodyInvoker;
@@ -174,7 +174,7 @@ public class AzureKeyVaultStep extends Step {
                     EnvironmentExpander.merge(context.get(EnvironmentExpander.class), new AzureKeyVaultEnvironmentExpander(secrets)),
                     BodyInvoker.mergeConsoleLogFilters(
                             context.get(ConsoleLogFilter.class),
-                            new MaskingConsoleLogFilter(StandardCharsets.UTF_8.name(), new ArrayList<>(secrets.values()))
+                            new MaskingConsoleLogFilter(StandardCharsets.UTF_8.name(), SecretPatterns.getAggregateSecretPattern(secrets.values()))
                     )
             );
             invoker.start();

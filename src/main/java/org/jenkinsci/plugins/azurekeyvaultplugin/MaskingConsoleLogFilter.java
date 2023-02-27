@@ -4,7 +4,7 @@ import hudson.console.ConsoleLogFilter;
 import hudson.model.Run;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.List;
+import java.util.regex.Pattern;
 import org.jenkinsci.plugins.credentialsbinding.masking.SecretPatterns;
 
 public class MaskingConsoleLogFilter extends ConsoleLogFilter
@@ -12,11 +12,11 @@ public class MaskingConsoleLogFilter extends ConsoleLogFilter
     private static final long serialVersionUID = 1L;
 
     private final String charsetName;
-    private final List<String> valuesToMask;
+    private final Pattern valuesToMask;
 
 
     public MaskingConsoleLogFilter(final String charsetName,
-                                   final List<String> valuesToMask
+                                   final Pattern valuesToMask
     ) {
         this.charsetName = charsetName;
         this.valuesToMask = valuesToMask;
@@ -27,7 +27,7 @@ public class MaskingConsoleLogFilter extends ConsoleLogFilter
             Run run,
             final OutputStream logger
     ) {
-        return new SecretPatterns.MaskingOutputStream(logger, () -> SecretPatterns.getAggregateSecretPattern(valuesToMask), charsetName);
+        return new SecretPatterns.MaskingOutputStream(logger, () -> valuesToMask, charsetName);
     }
 
 }
