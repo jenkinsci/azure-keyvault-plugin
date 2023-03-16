@@ -233,5 +233,4 @@ public class AzureCredentialsProvider extends CredentialsProvider {
     public String getIconClassName() {
         return "icon-azure-key-vault-credentials-store";
     }
-
 }
