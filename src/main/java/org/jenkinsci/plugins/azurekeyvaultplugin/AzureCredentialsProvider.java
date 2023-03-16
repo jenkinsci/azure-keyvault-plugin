@@ -113,7 +113,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             }
             SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
 
-            String labelSelector = StringUtils.isNotBlank(System.getenv("AZURE_KEYVAULT_LABEL_SELECTOR")) ? System.getenv("AZURE_KEYVAULT_LABEL_SELECTOR") : System.getProperty("jenkins.azure-keyvault.label_selector");
+            String labelSelector = extractLabelSelector();
             List<IdCredentials> credentials = new ArrayList<>();
             for (SecretProperties secretItem : client.listPropertiesOfSecrets()) {
                 String id = secretItem.getId();
@@ -160,8 +160,8 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                             try {
                                 passphrase = new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + passphraseID).get();
                             } catch (Exception e) {
-                                LOG.log(Level.WARNING, "Could not find passphrase " + passphraseID + " in KeyVault.  Defaulting to null");
-                                passphrase = null;
+                                LOG.log(Level.WARNING, "Could not find passphrase with ID " + passphraseID + " in KeyVault.");
+                                continue;
                             }
 
                         }
@@ -181,6 +181,10 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
             return Collections.emptyList();
         }
+    }
+
+    public static String extractLabelSelector() {
+        return StringUtils.isNotBlank(System.getenv("AZURE_KEYVAULT_LABEL_SELECTOR")) ? System.getenv("AZURE_KEYVAULT_LABEL_SELECTOR") : System.getProperty("jenkins.azure-keyvault.label_selector");
     }
 
     private static class KeyVaultSecretRetriever implements Supplier<Secret> {
@@ -229,4 +233,5 @@ public class AzureCredentialsProvider extends CredentialsProvider {
     public String getIconClassName() {
         return "icon-azure-key-vault-credentials-store";
     }
+
 }
