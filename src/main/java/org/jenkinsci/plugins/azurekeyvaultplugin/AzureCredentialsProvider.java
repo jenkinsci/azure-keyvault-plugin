@@ -144,13 +144,17 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     }
                     case "sshUserPrivateKey": {
                         String usernameSecretTag = tags.get("username-is-secret");
+                        String passphraseID = tags.get("passphrase-id");
+                        Secret passphrase;
                         boolean usernameSecret = false;
                         if (StringUtils.isNotBlank(usernameSecretTag)) {
                             usernameSecret = Boolean.parseBoolean(usernameSecretTag);
                         }
-
+                        if (StringUtils.isNotBlank(passphraseID)) {
+                            passphrase = new KeyVaultSecretRetriever(client, passphraseID).get();
+                        }
                         AzureSSHUserPrivateKeyCredentials cred = new AzureSSHUserPrivateKeyCredentials(
-                                getSecretName(id), "", tags.get("username"), usernameSecret, new KeyVaultSecretRetriever(client, id)
+                                getSecretName(id), "", tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)
                         );
                         credentials.add(cred);
                         break;

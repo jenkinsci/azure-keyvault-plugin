@@ -21,17 +21,20 @@ public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials i
     private final String username;
     private final boolean usernameSecret;
     private final Supplier<Secret> value;
+    private final String passphrase;
 
     public AzureSSHUserPrivateKeyCredentials(
             String id,
             String description,
             String username,
             boolean usernameSecret,
+            String passphrase,
             Supplier<Secret> privateKey
     ) {
         super(id, description);
         this.username = username;
         this.usernameSecret = usernameSecret;
+        this.passphrase = passphrase;
         this.value = privateKey;
     }
 
@@ -47,9 +50,10 @@ public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials i
         return appendNewLineIfMissing(key);
     }
 
+    @NonNull
     @Override
     public Secret getPassphrase() {
-        return null;
+        return passphrase;
     }
 
     @NonNull
