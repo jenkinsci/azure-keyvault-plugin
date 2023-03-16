@@ -50,7 +50,6 @@ public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials i
         return appendNewLineIfMissing(key);
     }
 
-    @NonNull
     @Override
     public Secret getPassphrase() {
         return passphrase;
