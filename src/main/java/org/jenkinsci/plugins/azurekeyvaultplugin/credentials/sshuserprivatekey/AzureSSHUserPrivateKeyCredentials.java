@@ -21,14 +21,14 @@ public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials i
     private final String username;
     private final boolean usernameSecret;
     private final Supplier<Secret> value;
-    private final String passphrase;
+    private final Secret passphrase;
 
     public AzureSSHUserPrivateKeyCredentials(
             String id,
             String description,
             String username,
             boolean usernameSecret,
-            String passphrase,
+            Secret passphrase,
             Supplier<Secret> privateKey
     ) {
         super(id, description);
