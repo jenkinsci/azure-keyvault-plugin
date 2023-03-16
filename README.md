@@ -354,7 +354,7 @@ pipeline {
 
 #### SSH Username with private key and passphrase
 
-You should never directly set the passphrase as a tag in the Azure Key Vault.  However, some SSH Private Keys require such a passphrase.  To resolve this issue, first create a passphrase secret within your Azure Key Vault (This can be a generic secret, no tags are necessary).
+Some SSH private keys will require a passphrase to function as a credential.  Using the previous examples, it would make sense to provide a tag option for including the passphrase.  However, you should obviously never directly set the passphrase as a tag in the Azure Key Vault.  To resolve this issue, first create a passphrase secret within your Azure Key Vault (This can be a generic secret, no tags are necessary).
 
 ```bash
 az keyvault secret set \
@@ -371,7 +371,7 @@ az keyvault secret set --tags type=sshUserPrivateKey username=my-username passph
   -f ~/.ssh/my-ssh-key
 ```
 
-Creating the sshUserPrivateKey will query the AKV once again for the passphrase value.  If the Passphrase could not be found in the vault, the passphrase value will be defaulted to Null.
+Creating the sshUserPrivateKey will query the AKV once again for the passphrase value.  If the passphrase could not be found in the vault, the passphrase value will be defaulted to Null.
 
 #### Secret Labels
 
