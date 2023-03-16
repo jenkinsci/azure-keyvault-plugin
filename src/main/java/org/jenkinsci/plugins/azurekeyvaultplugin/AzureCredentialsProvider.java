@@ -113,6 +113,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             }
             SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
 
+            String labelSelector = StringUtils.isNotBlank(System.getenv("AZURE_KEYVAULT_LABEL_SELECTOR")) ? System.getenv("AZURE_KEYVAULT_LABEL_SELECTOR") : System.getProperty("jenkins.azure-keyvault.label_selector");
             List<IdCredentials> credentials = new ArrayList<>();
             for (SecretProperties secretItem : client.listPropertiesOfSecrets()) {
                 String id = secretItem.getId();
@@ -120,6 +121,11 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
                 if (tags == null) {
                     tags = new HashMap<>();
+                }
+
+                if(StringUtils.isNotBlank(labelSelector) && !labelSelector.equals(tags.get("label"))) {
+                    // User specified a selector label in config, but current cred does not contain a matching tag, skip iteration
+                    continue;
                 }
 
                 String type = tags.getOrDefault("type", DEFAULT_TYPE);
@@ -145,13 +151,19 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     case "sshUserPrivateKey": {
                         String usernameSecretTag = tags.get("username-is-secret");
                         String passphraseID = tags.get("passphrase-id");
-                        Secret passphrase;
+                        Secret passphrase = null;
                         boolean usernameSecret = false;
                         if (StringUtils.isNotBlank(usernameSecretTag)) {
                             usernameSecret = Boolean.parseBoolean(usernameSecretTag);
                         }
                         if (StringUtils.isNotBlank(passphraseID)) {
-                            passphrase = new KeyVaultSecretRetriever(client, passphraseID).get();
+                            try {
+                                passphrase = new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + passphraseID).get();
+                            } catch (Exception e) {
+                                LOG.log(Level.WARNING, "Could not find passphrase " + passphraseID + " in KeyVault.  Defaulting to null");
+                                passphrase = null;
+                            }
+
                         }
                         AzureSSHUserPrivateKeyCredentials cred = new AzureSSHUserPrivateKeyCredentials(
                                 getSecretName(id), "", tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)

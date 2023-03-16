@@ -21,7 +21,7 @@ public class AzureSSHUserPrivateKeyCredentialsSnapshotTaker extends CredentialsS
                 credential.getDescription(),
                 credential.getUsername(),
                 credential.isUsernameSecret(),
-                credentials.getPassphrase(),
+                credential.getPassphrase(),
                 secretSnapshot
         );
     }

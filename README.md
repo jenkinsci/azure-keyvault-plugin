@@ -352,6 +352,59 @@ pipeline {
 }
 ```
 
+#### SSH Username with private key and passphrase
+
+You should never directly set the passphrase as a tag in the Azure Key Vault.  However, some SSH Private Keys require such a passphrase.  To resolve this issue, first create a passphrase secret within your Azure Key Vault (This can be a generic secret, no tags are necessary).
+
+```bash
+az keyvault secret set \
+  --vault-name my-vault \
+  --name test-ssh-passphrase \
+  --value my-ssh-passphrase
+```
+With the secret now in your vault, when creating a secret of type `sshUserPrivateKey`, specify the passphrase using a tag `passphrase-id` set with the **name** of the passphrase secret you created.
+
+```bash
+az keyvault secret set --tags type=sshUserPrivateKey username=my-username passphrase-id=test-ssh-passphrase \
+  --vault-name my-vault \
+  --name test-ssh \
+  -f ~/.ssh/my-ssh-key
+```
+
+Creating the sshUserPrivateKey will query the AKV once again for the passphrase value.  If the Passphrase could not be found in the vault, the passphrase value will be defaulted to Null.
+
+#### Secret Labels
+
+The Azure Key Vault Plugin provides the ability to filter which secrets are set via the Azure Key Vault Credentials Provider Plugin.  By default, the plugin will load all secrets stored within the Key Vault.  However, your Key Vault may be the Secret Source for multiple applications, or contains system information for your deployment environment not needed directly by Jenkins.  To filter out secrets from being set, add a System Property or Environment Variable:
+
+**Via System Property**:
+
+```bash
+-Djenkins.azure-keyvault.label_selector=myCustomLabel
+```
+
+**Via Environment Variable**:
+```bash
+AZURE_KEYVAULT_LABEL_SELECTOR=myCustomLabel
+```
+
+If included in your config, when the Azure Key Vault plugin is resolving credentials from your Key Vault, it will skip any secret that does not contain a tag `label=myCustomLabel`.  For example, if two secrets are set within the KeyVault:
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name testUserNoLabel \
+  --value example1 \
+  --tags username=testUserNoLabel type=username
+```
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name testUserWithLabel \
+  --value example2 \
+  --tags username=testUserWithLabel type=username label=myCustomLabel
+```
+
+With the System Property or Environment variable being set in this example, only the usernamePassword `testUserWithLabel` will be present in your Jenkins instance.
 
 ### SecretSource
 
