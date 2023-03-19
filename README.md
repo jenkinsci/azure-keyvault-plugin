@@ -365,7 +365,8 @@ az keyvault secret set \
   --name test-ssh-passphrase \
   --value my-ssh-passphrase
 ```
-With the secret now in your vault, when creating a secret of type `sshUserPrivateKey`, specify the passphrase using a tag `passphrase-id` set with the **name** of the passphrase secret you created.
+
+Store the SSH key with the passphrase tag:
 
 ```bash
 az keyvault secret set --tags type=sshUserPrivateKey username=my-username passphrase-id=test-ssh-passphrase \
