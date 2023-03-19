@@ -387,7 +387,7 @@ To filter out secrets from being set, add a System Property or Environment Varia
 **Via System Property**:
 
 ```bash
--Djenkins.azure-keyvault.label_selector=myCustomLabel
+-Djenkins.azure-keyvault.label-selector=myCustomLabel
 ```
 
 **Via Environment Variable**:
