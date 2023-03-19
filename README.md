@@ -356,6 +356,9 @@ pipeline {
 
 If your SSH private keys has a passphrase you need to add a tag `passphrase-id` which references the secret that the passphrase is stored in.
 
+
+Create the passphrase secret:
+
 ```bash
 az keyvault secret set \
   --vault-name my-vault \
