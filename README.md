@@ -379,7 +379,10 @@ If the passphrase can not be found in the vault, the secret will not load and a 
 
 #### Secret Labels
 
-The Azure Key Vault Plugin provides the ability to filter which secrets are set via the Azure Key Vault Credentials Provider Plugin.  By default, the plugin will load all secrets stored within the Key Vault.  However, your Key Vault may be the Secret Source for multiple applications, or contains system information for your deployment environment not needed directly by Jenkins.  To filter out secrets from being set, add a System Property or Environment Variable:
+You can filter which secrets are visible to the credentials provider.
+By default, the plugin will load all secrets stored within the Key Vault.
+However, your Key Vault may be the Secret Source for multiple applications, or contains secrets not needed directly by Jenkins. 
+To filter out secrets from being set, add a System Property or Environment Variable:
 
 **Via System Property**:
 
