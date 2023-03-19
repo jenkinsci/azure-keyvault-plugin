@@ -124,7 +124,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                 }
 
                 if (StringUtils.isNotBlank(labelSelector) && !labelSelector.equals(tags.get("label"))) {
-                    // User specified a selector label in config, but current cred does not contain a matching tag, skip iteration
+                    // User specified a label selector in config, but current credential does not contain a matching tag, skip iteration
                     continue;
                 }
 
