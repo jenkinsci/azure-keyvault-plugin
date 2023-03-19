@@ -123,7 +123,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     tags = new HashMap<>();
                 }
 
-                if(StringUtils.isNotBlank(labelSelector) && !labelSelector.equals(tags.get("label"))) {
+                if (StringUtils.isNotBlank(labelSelector) && !labelSelector.equals(tags.get("label"))) {
                     // User specified a selector label in config, but current cred does not contain a matching tag, skip iteration
                     continue;
                 }
