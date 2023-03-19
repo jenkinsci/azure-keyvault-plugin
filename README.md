@@ -352,7 +352,7 @@ pipeline {
 }
 ```
 
-#### SSH Username with private key and passphrase
+##### SSH Username with private key and passphrase
 
 If your SSH private keys has a passphrase you need to add a tag `passphrase-id` which references the secret that the passphrase is stored in.
 
