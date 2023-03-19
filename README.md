@@ -375,7 +375,7 @@ az keyvault secret set --tags type=sshUserPrivateKey username=my-username passph
   -f ~/.ssh/my-ssh-key
 ```
 
-Creating the sshUserPrivateKey will query the AKV once again for the passphrase value.  If the passphrase could not be found in the vault, the passphrase value will be defaulted to Null.
+If the passphrase can not be found in the vault, the secret will not load and a warning will be logged.
 
 #### Secret Labels
 
