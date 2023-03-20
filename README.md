@@ -395,7 +395,7 @@ To filter out secrets from being set, add a System Property or Environment Varia
 AZURE_KEYVAULT_LABEL_SELECTOR=myCustomLabel
 ```
 
-If included in your config, when the Azure Key Vault plugin is resolving credentials from your Key Vault, it will skip any secret that does not contain a tag `label=myCustomLabel`.  For example, if two secrets are set within the KeyVault:
+If included in your config, when the Azure Key Vault plugin is resolving credentials from your Key Vault, it will skip any secret that does not contain a tag `jenkins-label=myCustomLabel`.  For example, if two secrets are set within the KeyVault:
 
 ```bash
 az keyvault secret set --vault-name my-vault \
@@ -408,7 +408,7 @@ az keyvault secret set --vault-name my-vault \
 az keyvault secret set --vault-name my-vault \
   --name testUserWithLabel \
   --value example2 \
-  --tags username=testUserWithLabel type=username label=myCustomLabel
+  --tags username=testUserWithLabel type=username jenkins-label=myCustomLabel
 ```
 
 With the System Property or Environment variable being set in this example, only the usernamePassword `testUserWithLabel` will be present in your Jenkins instance.
