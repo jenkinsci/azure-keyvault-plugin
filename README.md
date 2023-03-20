@@ -352,6 +352,66 @@ pipeline {
 }
 ```
 
+##### SSH Username with private key and passphrase
+
+If your SSH private keys has a passphrase you need to add a tag `passphrase-id` which references the secret that the passphrase is stored in.
+
+
+Create the passphrase secret:
+
+```bash
+az keyvault secret set \
+  --vault-name my-vault \
+  --name test-ssh-passphrase \
+  --value my-ssh-passphrase
+```
+
+Store the SSH key with the passphrase tag:
+
+```bash
+az keyvault secret set --tags type=sshUserPrivateKey username=my-username passphrase-id=test-ssh-passphrase \
+  --vault-name my-vault \
+  --name test-ssh \
+  -f ~/.ssh/my-ssh-key
+```
+
+If the passphrase can not be found in the vault, the secret will not load and a warning will be logged.
+
+#### Secret Labels
+
+You can filter which secrets are visible to the credentials provider.
+By default, the plugin will load all secrets stored within the Key Vault.
+However, your Key Vault may be the Secret Source for multiple applications, or contains secrets not needed directly by Jenkins. 
+To filter out secrets from being set, add a System Property or Environment Variable:
+
+**Via System Property**:
+
+```bash
+-Djenkins.azure-keyvault.label-selector=myCustomLabel
+```
+
+**Via Environment Variable**:
+```bash
+AZURE_KEYVAULT_LABEL_SELECTOR=myCustomLabel
+```
+
+If included in your config, when the Azure Key Vault plugin is resolving credentials from your Key Vault, it will skip any secret that does not contain a tag `jenkins-label=myCustomLabel`.  For example, if two secrets are set within the KeyVault:
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name testUserNoLabel \
+  --value example1 \
+  --tags username=testUserNoLabel type=username
+```
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name testUserWithLabel \
+  --value example2 \
+  --tags username=testUserWithLabel type=username jenkins-label=myCustomLabel
+```
+
+With the System Property or Environment variable being set in this example, only the usernamePassword `testUserWithLabel` will be present in your Jenkins instance.
 
 ### SecretSource
 
