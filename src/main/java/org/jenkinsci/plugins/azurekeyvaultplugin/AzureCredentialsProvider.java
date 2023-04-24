@@ -117,63 +117,68 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             List<IdCredentials> credentials = new ArrayList<>();
             for (SecretProperties secretItem : client.listPropertiesOfSecrets()) {
                 String id = secretItem.getId();
-                Map<String, String> tags = secretItem.getTags();
+                try {
+                    Map<String, String> tags = secretItem.getTags();
 
-                if (tags == null) {
-                    tags = new HashMap<>();
-                }
-
-                if (StringUtils.isNotBlank(labelSelector) && !labelSelector.equals(tags.get("jenkins-label"))) {
-                    // User specified a label selector in config, but current credential does not contain a matching tag, skip iteration
-                    continue;
-                }
-
-                String type = tags.getOrDefault("type", DEFAULT_TYPE);
-
-                // initial implementation didn't require a type
-                if (tags.containsKey("username") && type.equals(DEFAULT_TYPE)) {
-                    type = "username";
-                }
-
-                switch (type) {
-                    case "string": {
-                        AzureSecretStringCredentials cred = new AzureSecretStringCredentials(getSecretName(id), "", new KeyVaultSecretRetriever(client, id));
-                        credentials.add(cred);
-                        break;
+                    if (tags == null) {
+                        tags = new HashMap<>();
                     }
-                    case "username": {
-                        AzureUsernamePasswordCredentials cred = new AzureUsernamePasswordCredentials(
-                                getSecretName(id), tags.get("username"), "", new KeyVaultSecretRetriever(client, id)
-                        );
-                        credentials.add(cred);
-                        break;
+
+                    if (StringUtils.isNotBlank(labelSelector) && !labelSelector.equals(tags.get("jenkins-label"))) {
+                        // User specified a label selector in config, but current credential does not contain a matching tag, skip iteration
+                        continue;
                     }
-                    case "sshUserPrivateKey": {
-                        String usernameSecretTag = tags.get("username-is-secret");
-                        String passphraseID = tags.get("passphrase-id");
-                        Secret passphrase = null;
-                        boolean usernameSecret = false;
-                        if (StringUtils.isNotBlank(usernameSecretTag)) {
-                            usernameSecret = Boolean.parseBoolean(usernameSecretTag);
+
+                    String type = tags.getOrDefault("type", DEFAULT_TYPE);
+
+                    // initial implementation didn't require a type
+                    if (tags.containsKey("username") && type.equals(DEFAULT_TYPE)) {
+                        type = "username";
+                    }
+
+                    switch (type) {
+                        case "string": {
+                            AzureSecretStringCredentials cred = new AzureSecretStringCredentials(getSecretName(id), "", new KeyVaultSecretRetriever(client, id));
+                            credentials.add(cred);
+                            break;
                         }
-                        if (StringUtils.isNotBlank(passphraseID)) {
-                            try {
-                                passphrase = new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + passphraseID).get();
-                            } catch (Exception e) {
-                                LOG.log(Level.WARNING, "Could not find passphrase with ID " + passphraseID + " in KeyVault.");
-                                continue;
+                        case "username": {
+                            AzureUsernamePasswordCredentials cred = new AzureUsernamePasswordCredentials(
+                                    getSecretName(id), tags.get("username"), "", new KeyVaultSecretRetriever(client, id)
+                            );
+                            credentials.add(cred);
+                            break;
+                        }
+                        case "sshUserPrivateKey": {
+                            String usernameSecretTag = tags.get("username-is-secret");
+                            String passphraseID = tags.get("passphrase-id");
+                            Secret passphrase = null;
+                            boolean usernameSecret = false;
+                            if (StringUtils.isNotBlank(usernameSecretTag)) {
+                                usernameSecret = Boolean.parseBoolean(usernameSecretTag);
                             }
+                            if (StringUtils.isNotBlank(passphraseID)) {
+                                try {
+                                    passphrase = new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + passphraseID).get();
+                                } catch (Exception e) {
+                                    LOG.log(Level.WARNING, "Could not find passphrase with ID " + passphraseID + " in KeyVault.");
+                                    continue;
+                                }
 
+                            }
+                            AzureSSHUserPrivateKeyCredentials cred = new AzureSSHUserPrivateKeyCredentials(
+                                    getSecretName(id), "", tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)
+                            );
+                            credentials.add(cred);
+                            break;
                         }
-                        AzureSSHUserPrivateKeyCredentials cred = new AzureSSHUserPrivateKeyCredentials(
-                                getSecretName(id), "", tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)
-                        );
-                        credentials.add(cred);
-                        break;
+                        default: {
+                            throw new IllegalStateException("Unknown type: " + type);
+                        }
                     }
-                    default: {
-                        throw new IllegalStateException("Unknown type: " + type);
-                    }
+                }
+                catch(Exception e){
+                    LOG.log(Level.WARNING, "Error retrieving secret with id " + id + " from Azure KeyVault: " + e.getMessage(), e);
                 }
             }
             return credentials;
