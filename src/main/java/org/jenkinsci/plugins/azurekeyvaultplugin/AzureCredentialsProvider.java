@@ -54,7 +54,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             .build(key -> fetchCredentials());
 
     public void refreshCredentials() {
-        cache.refresh(CACHE_KEY);
+        cache.invalidateAll();
     }
 
     @NonNull
