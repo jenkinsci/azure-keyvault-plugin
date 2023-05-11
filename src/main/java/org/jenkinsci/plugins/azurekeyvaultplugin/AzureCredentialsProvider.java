@@ -21,6 +21,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -124,9 +125,11 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                         tags = new HashMap<>();
                     }
 
-                    if (StringUtils.isNotBlank(labelSelector) && !labelSelector.equals(tags.get("jenkins-label"))) {
-                        // User specified a label selector in config, but current credential does not contain a matching tag, skip iteration
-                        continue;
+                    if (StringUtils.isNotBlank(labelSelector)) {
+                        String jenkinsLabels = tags.getOrDefault("jenkins-label", "");
+                        if (Arrays.asList(jenkinsLabels.split(",")).indexOf(labelSelector) == -1) {
+                            continue;
+                        }
                     }
 
                     String type = tags.getOrDefault("type", DEFAULT_TYPE);
