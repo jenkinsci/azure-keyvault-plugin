@@ -127,7 +127,8 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
                     if (StringUtils.isNotBlank(labelSelector)) {
                         String jenkinsLabels = tags.getOrDefault("jenkins-label", "");
-                        if (Arrays.asList(jenkinsLabels.split(",")).indexOf(labelSelector) == -1) {
+                        List<String> labelSelectors = Arrays.asList(jenkinsLabels.split(","));
+                        if (!labelSelectors.contains(labelSelector)) {
                             continue;
                         }
                     }
