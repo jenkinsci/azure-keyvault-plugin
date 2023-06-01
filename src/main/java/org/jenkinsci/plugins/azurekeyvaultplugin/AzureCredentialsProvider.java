@@ -134,6 +134,8 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     }
 
                     String type = tags.getOrDefault("type", DEFAULT_TYPE);
+                    String jenkinsID = tags.getOrDefault("jenkinsID", getSecretName(id));
+                    String description = tags.getOrDefault("description", "");
 
                     // initial implementation didn't require a type
                     if (tags.containsKey("username") && type.equals(DEFAULT_TYPE)) {
@@ -142,13 +144,13 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
                     switch (type) {
                         case "string": {
-                            AzureSecretStringCredentials cred = new AzureSecretStringCredentials(getSecretName(id), "", new KeyVaultSecretRetriever(client, id));
+                            AzureSecretStringCredentials cred = new AzureSecretStringCredentials(jenkinsID, description, new KeyVaultSecretRetriever(client, id));
                             credentials.add(cred);
                             break;
                         }
                         case "username": {
                             AzureUsernamePasswordCredentials cred = new AzureUsernamePasswordCredentials(
-                                    getSecretName(id), tags.get("username"), "", new KeyVaultSecretRetriever(client, id)
+                                    jenkinsID, tags.get("username"), description, new KeyVaultSecretRetriever(client, id)
                             );
                             credentials.add(cred);
                             break;
@@ -171,7 +173,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
                             }
                             AzureSSHUserPrivateKeyCredentials cred = new AzureSSHUserPrivateKeyCredentials(
-                                    getSecretName(id), "", tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)
+                                    jenkinsID, description, tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)
                             );
                             credentials.add(cred);
                             break;
