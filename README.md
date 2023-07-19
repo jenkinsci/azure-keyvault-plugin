@@ -424,13 +424,13 @@ With the System Property or Environment variable being set in this example, only
 
 #### Jenkins Credential ID and Description
 
-The ID and description of credentials can be specified with tags on the Azure Key Vault secret. The ID is specified with the tag "JenkinsID" and appears in the Jenkins credentials UI in the "ID" column. This is the credenialsId parameter used in withCredentials() calls. The description is specified with the tag "description" and appears in Jenkins credentials UI in the "Name" column.
+The ID and description of credentials can be specified with tags on the Azure Key Vault secret. The ID is specified with the tag "jenkinsID" and appears in the Jenkins credentials UI in the "ID" column. This is the credentials ID parameter used in `withCredentials()` calls. The description is specified with the tag "description" and appears in Jenkins credentials UI in the "Name" column.
 
 ```bash
 az keyvault secret set --vault-name my-vault \
   --name testUserWithLabel \
   --value example2 \
-  --tags JenkinsID=myCred description="This is my credential"
+  --tags jenkinsID=myCred description="This is my credential"
 ```
 
 ### SecretSource
