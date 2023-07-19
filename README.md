@@ -411,7 +411,27 @@ az keyvault secret set --vault-name my-vault \
   --tags username=testUserWithLabel type=username jenkins-label=myCustomLabel
 ```
 
+Multiple label selectors can be specified as a comma separated list:
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name testUserWithLabel \
+  --value example2 \
+  --tags jenkins-label=myCustomLabel1,myCustomLabel2
+```
+
 With the System Property or Environment variable being set in this example, only the usernamePassword `testUserWithLabel` will be present in your Jenkins instance.
+
+#### Jenkins Credential ID and Description
+
+The ID and description of credentials can be specified with tags on the Azure Key Vault secret. The ID is specified with the tag "jenkinsID" and appears in the Jenkins credentials UI in the "ID" column. This is the credentials ID parameter used in `withCredentials()` calls. The description is specified with the tag "description" and appears in Jenkins credentials UI in the "Name" column.
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name testUserWithLabel \
+  --value example2 \
+  --tags jenkinsID=myCred description="This is my credential"
+```
 
 ### SecretSource
 
