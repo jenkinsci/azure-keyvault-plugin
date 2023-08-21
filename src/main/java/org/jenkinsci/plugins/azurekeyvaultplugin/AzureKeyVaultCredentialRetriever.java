@@ -35,6 +35,7 @@ public class AzureKeyVaultCredentialRetriever {
             CredentialsProvider.track(build, cred);
             AzureCredentials azureCredentials = (AzureCredentials) cred;
             credential = new ClientSecretCredentialBuilder()
+                    .authorityHost(azureCredentials.getAzureEnvironment().getActiveDirectoryEndpoint())
                     .clientId(azureCredentials.getClientId())
                     .clientSecret(azureCredentials.getPlainClientSecret())
                     .httpClient(HttpClientRetriever.get())
