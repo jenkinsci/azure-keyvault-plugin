@@ -17,6 +17,7 @@ public class AzureSSHUserPrivateKeyCredentialsSnapshotTaker extends CredentialsS
     public AzureSSHUserPrivateKeyCredentials snapshot(AzureSSHUserPrivateKeyCredentials credential) {
         SecretSnapshot secretSnapshot = new SecretSnapshot(credential.getSecretValue());
         return new AzureSSHUserPrivateKeyCredentials(
+                credential.getScope(),
                 credential.getId(),
                 credential.getDescription(),
                 credential.getUsername(),

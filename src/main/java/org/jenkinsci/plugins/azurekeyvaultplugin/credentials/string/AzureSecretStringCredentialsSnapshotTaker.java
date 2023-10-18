@@ -16,7 +16,7 @@ public class AzureSecretStringCredentialsSnapshotTaker extends CredentialsSnapsh
     @Override
     public AzureSecretStringCredentials snapshot(AzureSecretStringCredentials credential) {
         SecretSnapshot secretSnapshot = new SecretSnapshot(credential.getSecret());
-        return new AzureSecretStringCredentials(credential.getId(), credential.getDescription(), secretSnapshot);
+        return new AzureSecretStringCredentials(credential.getScope(), credential.getId(), credential.getDescription(), secretSnapshot);
     }
 
     private static class SecretSnapshot extends Snapshot<Secret> {
