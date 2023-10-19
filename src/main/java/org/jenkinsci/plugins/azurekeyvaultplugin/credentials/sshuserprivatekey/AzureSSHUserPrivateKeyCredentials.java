@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.azurekeyvaultplugin.credentials.sshuserprivatekey;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.Messages;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
@@ -24,6 +25,7 @@ public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials i
     private final Secret passphrase;
 
     public AzureSSHUserPrivateKeyCredentials(
+            CredentialsScope scope,
             String id,
             String description,
             String username,
@@ -31,7 +33,7 @@ public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials i
             Secret passphrase,
             Supplier<Secret> privateKey
     ) {
-        super(id, description);
+        super(scope, id, description);
         this.username = username;
         this.usernameSecret = usernameSecret;
         this.passphrase = passphrase;

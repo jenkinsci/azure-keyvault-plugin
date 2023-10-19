@@ -422,15 +422,15 @@ az keyvault secret set --vault-name my-vault \
 
 With the System Property or Environment variable being set in this example, only the usernamePassword `testUserWithLabel` will be present in your Jenkins instance.
 
-#### Jenkins Credential ID and Description
+#### Jenkins Credential ID, Description and Scope
 
-The ID and description of credentials can be specified with tags on the Azure Key Vault secret. The ID is specified with the tag "jenkinsID" and appears in the Jenkins credentials UI in the "ID" column. This is the credentials ID parameter used in `withCredentials()` calls. The description is specified with the tag "description" and appears in Jenkins credentials UI in the "Name" column.
+The ID, description and scope of credentials can be specified with tags on the Azure Key Vault secret. The ID is specified with the tag "jenkinsID" and appears in the Jenkins credentials UI in the "ID" column. This is the credentials ID parameter used in `withCredentials()` calls. The description is specified with the tag "description" and appears in the Jenkins credentials UI in the "Name" column. The scope is specified with the tag "scope" and can be set to "system" or "global". By default the scope will be set to global.
 
 ```bash
 az keyvault secret set --vault-name my-vault \
   --name testUserWithLabel \
   --value example2 \
-  --tags jenkinsID=myCred description="This is my credential"
+  --tags jenkinsID=myCred description="This is my credential" scope=system
 ```
 
 ### SecretSource

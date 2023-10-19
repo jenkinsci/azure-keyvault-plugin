@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin.credentials.usernamepassword;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.cloudbees.plugins.credentials.impl.Messages;
@@ -18,12 +19,13 @@ public class AzureUsernamePasswordCredentials extends BaseStandardCredentials im
     private final String username;
 
     public AzureUsernamePasswordCredentials(
+            CredentialsScope scope,
             String id,
             String username,
             String description,
             Supplier<Secret> password
     ) {
-        super(id, description);
+        super(scope, id, description);
         this.password = password;
         this.username = Util.fixNull(username);
     }

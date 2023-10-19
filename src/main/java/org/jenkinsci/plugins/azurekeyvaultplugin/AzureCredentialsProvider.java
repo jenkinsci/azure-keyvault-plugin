@@ -4,8 +4,10 @@ import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.SecretProperties;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
@@ -13,6 +15,7 @@ import com.microsoft.jenkins.keyvault.SecretClientCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
+import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
 import hudson.security.ACL;
@@ -27,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,6 +49,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
     private static final String CACHE_KEY = "key";
     private static final String DEFAULT_TYPE = "string";
+    private static final String DEFAULT_SCOPE = "GLOBAL";
 
     private final AzureCredentialsStore store = new AzureCredentialsStore(this);
 
@@ -57,7 +62,6 @@ public class AzureCredentialsProvider extends CredentialsProvider {
     public void refreshCredentials() {
         cache.invalidateAll();
     }
-
     @NonNull
     @Override
     public <C extends Credentials> List<C> getCredentials(@NonNull Class<C> aClass, @Nullable ItemGroup itemGroup,
@@ -72,10 +76,15 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
                 for (IdCredentials credential : credentials) {
                     if (aClass.isAssignableFrom(credential.getClass())) {
-                        // cast to keep generics happy even though we are assignable
-                        list.add(aClass.cast(credential));
+                        if (CredentialsScope.SYSTEM == credential.getScope() && !(itemGroup instanceof Jenkins)) {
+                            LOG.log(Level.FINEST, "getCredentials {0} has SYSTEM scope but the context is not Jenkins. Ignoring credential", credential.getId());
+                        } else if (aClass.isAssignableFrom(credential.getClass())) {
+                            // cast to keep generics happy even though we are assignable
+                            list.add(aClass.cast(credential));
+                        } else {
+                            LOG.log(Level.FINEST, "getCredentials {0} does not match", credential.getId());
+                        }
                     }
-                    LOG.log(Level.FINEST, "getCredentials {0} does not match", credential.getId());
                 }
             } catch (RuntimeException e) {
                 LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
@@ -85,6 +94,25 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         }
 
         return Collections.emptyList();
+    }
+
+    @Override
+    @NonNull
+    public <C extends Credentials> List<C> getCredentials(@NonNull Class<C> type,
+                                                          @NonNull Item item,
+                                                          Authentication authentication) {
+        // scoping to Items is not supported so using null to not expose SYSTEM credentials to Items.
+        Objects.requireNonNull(item);
+        return getCredentials(type, (ItemGroup)null, authentication);
+    }
+
+    @Override
+    public <C extends Credentials> List<C> getCredentials(@NonNull Class<C> type,
+                                                          @NonNull Item item,
+                                                          Authentication authentication,
+                                                          List<DomainRequirement> domainRequirements) {
+        // domain requirements not supported
+        return getCredentials(type, item, authentication);
     }
 
     @VisibleForTesting
@@ -136,6 +164,13 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     String type = tags.getOrDefault("type", DEFAULT_TYPE);
                     String jenkinsID = tags.getOrDefault("jenkinsID", getSecretName(id));
                     String description = tags.getOrDefault("description", "");
+                    String labelScope = tags.getOrDefault("scope", DEFAULT_SCOPE).toUpperCase();
+
+                    CredentialsScope scope = CredentialsScope.GLOBAL;
+
+                    if (tags.containsKey("scope") && labelScope.equals("SYSTEM")) {
+                        scope = CredentialsScope.SYSTEM;
+                    }
 
                     // initial implementation didn't require a type
                     if (tags.containsKey("username") && type.equals(DEFAULT_TYPE)) {
@@ -144,13 +179,13 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
                     switch (type) {
                         case "string": {
-                            AzureSecretStringCredentials cred = new AzureSecretStringCredentials(jenkinsID, description, new KeyVaultSecretRetriever(client, id));
+                            AzureSecretStringCredentials cred = new AzureSecretStringCredentials(scope, jenkinsID, description, new KeyVaultSecretRetriever(client, id));
                             credentials.add(cred);
                             break;
                         }
                         case "username": {
                             AzureUsernamePasswordCredentials cred = new AzureUsernamePasswordCredentials(
-                                    jenkinsID, tags.get("username"), description, new KeyVaultSecretRetriever(client, id)
+                                    scope, jenkinsID, tags.get("username"), description, new KeyVaultSecretRetriever(client, id)
                             );
                             credentials.add(cred);
                             break;
@@ -173,7 +208,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
                             }
                             AzureSSHUserPrivateKeyCredentials cred = new AzureSSHUserPrivateKeyCredentials(
-                                    jenkinsID, description, tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)
+                                    scope, jenkinsID, description, tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)
                             );
                             credentials.add(cred);
                             break;
