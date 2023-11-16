@@ -142,9 +142,8 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             }
 
             // If keyVaultURL does not have a trailing slash, add one
-            if (!String.valueOf(keyVaultURL.charAt(keyVaultURL.length() -1)).equals("/")) {
-                LOG.log(Level.FINE, "Adding trailing slash to key vault URL");
-                keyVaultURL = keyVaultURL + "/";
+            if (!keyVaultURL.endsWith("/")) {
+                keyVaultURL += "/";
             }
 
             SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
