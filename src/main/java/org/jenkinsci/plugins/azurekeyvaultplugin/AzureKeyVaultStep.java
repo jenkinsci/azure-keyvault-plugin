@@ -211,8 +211,12 @@ public class AzureKeyVaultStep extends Step {
                     KeyVaultSecret bundle = getSecret(client, secret);
                     if (bundle != null) {
                         try {
-                            FilePath filePath = requireNonNull(getContext().get(FilePath.class));
-                            String path = AzureKeyVaultUtil.convertAndWritePfxToDisk(filePath, bundle.getValue());
+                            FilePath filePath = requireNonNull(getContext().get(FilePath.class), "A certificate requires a `node`");
+                            String path = AzureKeyVaultUtil.saveCertificateToDisk(
+                                    bundle.getProperties().getContentType(),
+                                    filePath,
+                                    bundle.getValue()
+                            );
                             secrets.put(secret.getEnvVariable(), path);
                         } catch (Exception e) {
                             throw new AzureKeyVaultException(e.getMessage(), e);
