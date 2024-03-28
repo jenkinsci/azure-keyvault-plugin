@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nonnull;
 import javax.security.auth.login.CredentialNotFoundException;
 import jenkins.YesNoMaybe;
 import org.apache.commons.lang3.StringUtils;
@@ -239,7 +238,7 @@ public class AzureKeyVaultStep extends Step {
          * {@inheritDoc}
          */
         @Override
-        public void stop(@Nonnull Throwable cause) {
+        public void stop(@NonNull Throwable cause) {
             getContext().onFailure(cause);
         }
     }
