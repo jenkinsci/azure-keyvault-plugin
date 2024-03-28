@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Item;
@@ -34,7 +35,6 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.annotation.CheckForNull;
 import javax.security.auth.login.CredentialNotFoundException;
 import jenkins.YesNoMaybe;
 import org.apache.commons.lang3.StringUtils;
