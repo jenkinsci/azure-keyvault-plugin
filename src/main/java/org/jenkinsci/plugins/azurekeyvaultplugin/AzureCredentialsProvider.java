@@ -38,6 +38,7 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.secretfile.AzureSecretFileCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.sshuserprivatekey.AzureSSHUserPrivateKeyCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string.AzureSecretStringCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.usernamepassword.AzureUsernamePasswordCredentials;
@@ -186,6 +187,15 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     switch (type) {
                         case "string": {
                             AzureSecretStringCredentials cred = new AzureSecretStringCredentials(scope, jenkinsID, description, new KeyVaultSecretRetriever(client, id));
+                            credentials.add(cred);
+                            break;
+                        }
+                        case "secretFile": {
+                            String fileName = tags.get("fileName");
+                            if(fileName.isEmpty()){
+                                fileName = "defaultFileName.txt";
+                            }
+                            AzureSecretFileCredentials cred = new AzureSecretFileCredentials(scope, jenkinsID, description, fileName, new KeyVaultSecretRetriever(client, id));
                             credentials.add(cred);
                             break;
                         }
