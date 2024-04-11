@@ -15,7 +15,7 @@ The plugin acts as an Azure Active Directory Application and must be configured 
 
 In the Jenkins **Configure System** page, configure the following two options in the **Azure Key Vault Plugin** section
 * **Key Vault URL** - The url where your Key Vault resides (e.g. `https://myvault.vault.azure.net/`)
-* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are: 
+* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are:
     - **Azure Service Principal**
     - **Azure Managed Identity** (both user and system assigned)
 
@@ -144,7 +144,7 @@ node {
 With overrides:
 ```groovy
 static LinkedHashMap<String, Object> secret(String secretName, String envVar) {
-  [ 
+  [
     secretType: 'Secret',
     name: secretName,
     version: '342432lkjhdasjld',
@@ -158,7 +158,7 @@ node {
     ]
 
     withAzureKeyvault(
-            azureKeyVaultSecrets: secrets, 
+            azureKeyVaultSecrets: secrets,
             keyVaultURLOverride: 'https://mykeyvault.vault.azure.net',
             credentialIDOverride: 'service-principal'
     ) {
@@ -199,8 +199,8 @@ pipeline {
         stage('Build') {
             options {
               azureKeyVault(
-                credentialID: 'my-sp', 
-                keyVaultURL: 'https://my.vault.azure.net', 
+                credentialID: 'my-sp',
+                keyVaultURL: 'https://my.vault.azure.net',
                 secrets: [
                     [envVariable: 'MY_SECRET', name: 'my-secret', secretType: 'Secret']
                 ]
@@ -254,9 +254,13 @@ To use a different type add a tag called `type` with one of the below values:
 - `string` - Secret text
 - `username` - Username with password
   - add a tag `username` for the username of the credential
+- `secretFile` - a file with secret content
+  - add a tag `fileName`  for the secret file name, when it is fetched (default is `defaultFileName.txt`).
 - `sshUserPrivateKey` - SSH Private key
   - add a tag `username` for the username of the credential
-  - (optional) add a tag `username-is-secret` and set it to true to hide the username in the build logs 
+  - (optional) add a tag `username-is-secret` and set it to true to hide the username in the build logs
+
+#### Secret String
 
 Declarative Pipeline:
 
@@ -295,7 +299,7 @@ az keyvault secret set --vault-name my-vault \
   --tags username=github-user type=username
 ```
 
-Scripted Pipeline:  
+Scripted Pipeline:
 ```groovy
 job('my example') {
     scm {
@@ -308,6 +312,26 @@ job('my example') {
     }
 }
 ```
+
+#### Secret file
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name a-secret-file-vault-secret \
+  --value "-----BEGIN test secretFile-----\nline 1\nline2\nbla\nblob" \
+  --tags type=secretFile fileName=mySecretFile.txt
+```
+
+Scripted Pipeline:
+```groovy
+node {
+    withCredentials([
+      file(credentialsId: "test-secretFile-credentialsId", variable: "VARIABLE_CONTAINING_PATH_TO_SECRET_FILE")]) {
+      sh("doSomething --use-this-secret-file \$VARIABLE_CONTAINING_PATH_TO_SECRET_FILE")
+    }
+}
+```
+
 
 #### SSH Username with private key
 
@@ -381,7 +405,7 @@ If the passphrase can not be found in the vault, the secret will not load and a 
 
 You can filter which secrets are visible to the credentials provider.
 By default, the plugin will load all secrets stored within the Key Vault.
-However, your Key Vault may be the Secret Source for multiple applications, or contains secrets not needed directly by Jenkins. 
+However, your Key Vault may be the Secret Source for multiple applications, or contains secrets not needed directly by Jenkins.
 To filter out secrets from being set, add a System Property or Environment Variable:
 
 **Via System Property**:
