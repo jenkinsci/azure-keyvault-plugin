@@ -193,7 +193,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                         case "secretFile": {
                             String fileName = tags.get("fileName");
                             if(fileName.isEmpty()){
-                                fileName = "defaultFileName.txt";
+                                fileName = getSecretName(id) + ".txt";
                             }
                             AzureSecretFileCredentials cred = new AzureSecretFileCredentials(scope, jenkinsID, description, fileName, new KeyVaultSecretRetriever(client, id));
                             credentials.add(cred);

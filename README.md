@@ -255,7 +255,7 @@ To use a different type add a tag called `type` with one of the below values:
 - `username` - Username with password
   - add a tag `username` for the username of the credential
 - `secretFile` - a file with secret content
-  - add a tag `fileName`  for the secret file name, when it is fetched (default is `defaultFileName.txt`).
+  - (optional) add a tag `fileName`  for the secret file name, when it is fetched. Default is `${secretNameIntheVault}.txt`.
 - `sshUserPrivateKey` - SSH Private key
   - add a tag `username` for the username of the credential
   - (optional) add a tag `username-is-secret` and set it to true to hide the username in the build logs
