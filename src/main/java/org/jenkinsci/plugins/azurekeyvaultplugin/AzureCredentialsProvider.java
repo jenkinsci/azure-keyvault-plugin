@@ -38,6 +38,7 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.apache.commons.lang3.StringUtils;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.certificate.AzureCertificateCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.secretfile.AzureSecretFileCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.sshuserprivatekey.AzureSSHUserPrivateKeyCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string.AzureSecretStringCredentials;
@@ -225,6 +226,27 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                             }
                             AzureSSHUserPrivateKeyCredentials cred = new AzureSSHUserPrivateKeyCredentials(
                                     scope, jenkinsID, description, tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)
+                            );
+                            credentials.add(cred);
+                            break;
+                        }
+                        case "certificate": {
+                            String passwordId = tags.get("password-id");
+                            Supplier<Secret> password = null;
+                            if (StringUtils.isNotBlank(passwordId)) {
+                                try {
+                                    password = new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + passwordId);
+                                } catch (Exception e) {
+                                    LOG.log(Level.WARNING, "Could not find password with ID " + passwordId + " in KeyVault.");
+                                    continue;
+                                }
+                            }
+                            AzureCertificateCredentials cred = new AzureCertificateCredentials(
+                                scope,
+                                jenkinsID,
+                                description,
+                                password,
+                                new KeyVaultSecretRetriever(client, id)
                             );
                             credentials.add(cred);
                             break;
