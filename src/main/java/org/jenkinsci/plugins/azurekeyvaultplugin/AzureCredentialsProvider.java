@@ -232,7 +232,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                         }
                         case "certificate": {
                             String passwordId = tags.get("password-id");
-                            Supplier<Secret> password = null;
+                            Supplier<Secret> password = () -> Secret.fromString("");
                             if (StringUtils.isNotBlank(passwordId)) {
                                 try {
                                     password = new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + passwordId);
