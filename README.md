@@ -259,6 +259,9 @@ To use a different type add a tag called `type` with one of the below values:
 - `sshUserPrivateKey` - SSH Private key
   - add a tag `username` for the username of the credential
   - (optional) add a tag `username-is-secret` and set it to true to hide the username in the build logs
+  - (optional) add a tag `passphrase-id` that points to the secret name in the vault that has the passphrase that should be used with the ssh keys
+- `certificate` - a certificate as secret
+  - (optional) add tag `password-id` that points to the secret name in the vault that has the password of the certificate.
 
 #### Secret String
 
@@ -400,6 +403,70 @@ az keyvault secret set --tags type=sshUserPrivateKey username=my-username passph
 ```
 
 If the passphrase can not be found in the vault, the secret will not load and a warning will be logged.
+
+#### Certificate
+
+It is possible to load certificates from the vault.
+The certificate needs to be stored in a vault-secret **base64-encoded** and **without whitespace**.
+In addition to the secret containing the keystore info (the certificate), another vault-secret is needed to store the password of the keystore.
+
+1. If the certificate is protected by a password, Create the password secret:
+
+```bash
+az keyvault secret set \
+  --vault-name my-vault \
+  --name secret-containing-keystore-password \
+  --value my-keystore-password
+```
+
+2. Store the (**base64-encoded** and **without whitespace**) keystore with the password tag:
+
+  if the certificate is protected by a password:
+
+```bash
+az keyvault secret set \
+  --tags type=certificate password-id=secret-containing-keystore-password \
+  --vault-name my-vault \
+  --name secret-containing-base64encoded-keystore \
+  --value {base64-encoded-keystore}
+```
+
+  if the certificate has no password ( a zero length password )
+
+```bash
+az keyvault secret set \
+  --tags type=certificate \
+  --vault-name my-vault \
+  --name secret-containing-base64encoded-keystore \
+  --value {base64-encoded-keystore}
+```
+
+If the tag `password-id` is set but the password can not be found in the vault, the secret will not load and a warning will be logged.
+If the keystore cannot be decoded, or cannot be loaded the pipeline using the certificate-credentialsId will throw an error.
+
+
+Scripted pipeline:
+
+```groovy
+node {
+    withCredentials([
+        certificate(
+            credentialsId: certificateCredentialsId,
+            keystoreVariable: 'PATH_TO_KEYSTORE',
+            passwordVariable: 'PASSWORD'
+        )
+    ]) {
+      sh(
+        script: """
+            curl -X POST \
+                --cert-type P12 \
+                --cert "\$PATH_TO_KEYSTORE":\$PASSWORD \
+                ${url}
+        """
+      )
+    }
+}
+```
 
 #### Secret Labels
 
