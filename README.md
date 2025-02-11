@@ -482,6 +482,7 @@ To filter out secrets from being set, add a System Property or Environment Varia
 ```
 
 **Via Environment Variable**:
+
 ```bash
 AZURE_KEYVAULT_LABEL_SELECTOR=myCustomLabel
 ```
@@ -503,6 +504,10 @@ az keyvault secret set --vault-name my-vault \
 ```
 
 Multiple label selectors can be specified as a comma separated list:
+
+```bash
+AZURE_KEYVAULT_LABEL_SELECTOR=myCustomLabel,anotherCustomLabel
+```
 
 ```bash
 az keyvault secret set --vault-name my-vault \

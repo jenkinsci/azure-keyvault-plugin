@@ -150,7 +150,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
             SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
 
-            String labelSelector = extractLabelSelector();
+            String configuredLabelSelector = extractLabelSelector();
             List<IdCredentials> credentials = new ArrayList<>();
             for (SecretProperties secretItem : client.listPropertiesOfSecrets()) {
                 String id = secretItem.getId();
@@ -160,11 +160,11 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     if (tags == null) {
                         tags = new HashMap<>();
                     }
-
-                    if (StringUtils.isNotBlank(labelSelector)) {
-                        String jenkinsLabels = tags.getOrDefault("jenkins-label", "");
-                        List<String> labelSelectors = Arrays.asList(jenkinsLabels.split(","));
-                        if (!labelSelectors.contains(labelSelector)) {
+                    if (StringUtils.isNotBlank(configuredLabelSelector)) {
+                        String secretLabelSelector = tags.getOrDefault("jenkins-label", "");
+                        List<String> secretLabels = Arrays.asList(secretLabelSelector.split(","));
+                        List<String> configuredLabels = Arrays.asList(configuredLabelSelector.split(","));
+                        if (secretLabels.stream().filter(configuredLabels::contains).findAny().isEmpty()) {
                             continue;
                         }
                     }
@@ -176,7 +176,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
                     CredentialsScope scope = CredentialsScope.GLOBAL;
 
-                    if (tags.containsKey("scope") && labelScope.equals("SYSTEM")) {
+                    if (tags.containsKey("scope") && labelScope.equalsIgnoreCase("SYSTEM")) {
                         scope = CredentialsScope.SYSTEM;
                     }
 
