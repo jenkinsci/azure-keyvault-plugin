@@ -36,13 +36,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
-import org.acegisecurity.Authentication;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.certificate.AzureCertificateCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.secretfile.AzureSecretFileCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.sshuserprivatekey.AzureSSHUserPrivateKeyCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string.AzureSecretStringCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.usernamepassword.AzureUsernamePasswordCredentials;
+import org.springframework.security.core.Authentication;
 
 
 @Extension
@@ -66,9 +66,12 @@ public class AzureCredentialsProvider extends CredentialsProvider {
     }
     @NonNull
     @Override
-    public <C extends Credentials> List<C> getCredentials(@NonNull Class<C> aClass, @Nullable ItemGroup itemGroup,
-                                                          @Nullable Authentication authentication) {
-        if (ACL.SYSTEM.equals(authentication)) {
+    public <C extends Credentials> List<C> getCredentialsInItemGroup(
+            @NonNull Class<C> aClass,
+            @Nullable ItemGroup itemGroup,
+            @Nullable Authentication authentication,
+            @NonNull List<DomainRequirement> domainRequirements) {
+        if (ACL.SYSTEM2.equals(authentication)) {
             final ArrayList<C> list = new ArrayList<>();
             try {
                 Collection<IdCredentials> credentials = cache.get(CACHE_KEY);
@@ -100,21 +103,14 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
     @Override
     @NonNull
-    public <C extends Credentials> List<C> getCredentials(@NonNull Class<C> type,
-                                                          @NonNull Item item,
-                                                          Authentication authentication) {
+    public <C extends Credentials> List<C> getCredentialsInItem(
+            @NonNull Class<C> type,
+            @NonNull Item item,
+            @Nullable Authentication authentication,
+            @NonNull List<DomainRequirement> domainRequirements) {
         // scoping to Items is not supported so using null to not expose SYSTEM credentials to Items.
         Objects.requireNonNull(item);
-        return getCredentials(type, (ItemGroup)null, authentication);
-    }
-
-    @Override
-    public <C extends Credentials> List<C> getCredentials(@NonNull Class<C> type,
-                                                          @NonNull Item item,
-                                                          Authentication authentication,
-                                                          List<DomainRequirement> domainRequirements) {
-        // domain requirements not supported
-        return getCredentials(type, item, authentication);
+        return getCredentialsInItemGroup(type, null, authentication, domainRequirements);
     }
 
     @VisibleForTesting

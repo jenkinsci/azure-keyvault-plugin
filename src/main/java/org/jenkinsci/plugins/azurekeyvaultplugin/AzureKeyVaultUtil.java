@@ -106,7 +106,7 @@ class AzureKeyVaultUtil {
         }
 
         return new StandardListBoxModel().includeEmptyValue()
-                .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class)
-                .includeAs(ACL.SYSTEM, context, AzureCredentials.class);
+                .includeAs(ACL.SYSTEM2, context, AzureImdsCredentials.class)
+                .includeAs(ACL.SYSTEM2, context, AzureCredentials.class);
     }
 }
