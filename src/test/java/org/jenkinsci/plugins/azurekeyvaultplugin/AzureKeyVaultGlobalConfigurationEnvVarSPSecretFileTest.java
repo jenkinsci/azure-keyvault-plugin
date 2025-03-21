@@ -3,33 +3,25 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.microsoft.azure.util.AzureCredentials;
-import io.jenkins.plugins.casc.misc.EnvVarsRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-public class AzureKeyVaultGlobalConfigurationEnvVarSPSecretFileTest {
 
-
-    public final JenkinsRule j = new JenkinsRule();
-
-    @Rule
-    public RuleChain chain = RuleChain
-            .outerRule(new EnvVarsRule()
-                    .set("AZURE_KEYVAULT_URL", "https://mine.vault.azure.net")
-                    .set("AZURE_KEYVAULT_SP_CLIENT_ID", "1234")
-                    .set("AZURE_KEYVAULT_SP_SUBSCRIPTION_ID", "5678")
-                    .set("AZURE_KEYVAULT_SP_TENANT_ID", "tenant_id")
-                    .set("AZURE_KEYVAULT_SP_CLIENT_SECRET_FILE", "src/test/resources/org/jenkinsci/plugins/azurekeyvaultplugin/secretfile")
-            )
-            .around(j);
+@WithJenkins
+@SetEnvironmentVariable(key = "AZURE_KEYVAULT_URL", value = "https://mine.vault.azure.net")
+@SetEnvironmentVariable(key = "AZURE_KEYVAULT_SP_CLIENT_ID", value = "1234")
+@SetEnvironmentVariable(key = "AZURE_KEYVAULT_SP_SUBSCRIPTION_ID", value = "5678")
+@SetEnvironmentVariable(key = "AZURE_KEYVAULT_SP_TENANT_ID", value = "tenant_id")
+@SetEnvironmentVariable(key = "AZURE_KEYVAULT_SP_CLIENT_SECRET_FILE", value = "src/test/resources/org/jenkinsci/plugins/azurekeyvaultplugin/secretfile")
+class AzureKeyVaultGlobalConfigurationEnvVarSPSecretFileTest {
 
     @Test
-    public void testValuesSet() {
+    void testValuesSet(JenkinsRule j) {
         AzureKeyVaultGlobalConfiguration configuration = AzureKeyVaultGlobalConfiguration.get();
 
         assertThat(configuration.getCredentialID(), is(AzureKeyVaultGlobalConfiguration.GENERATED_ID));
@@ -45,6 +37,5 @@ public class AzureKeyVaultGlobalConfigurationEnvVarSPSecretFileTest {
         assertThat(azureCredentials.getPlainClientSecret(), is("1255534"));
         assertThat(azureCredentials.getSubscriptionId(), is("5678"));
         assertThat(azureCredentials.getTenant(), is("tenant_id"));
-
     }
 }

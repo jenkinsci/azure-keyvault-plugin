@@ -3,29 +3,22 @@ package org.jenkinsci.plugins.azurekeyvaultplugin;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.microsoft.azure.util.AzureImdsCredentials;
-import io.jenkins.plugins.casc.misc.EnvVarsRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-public class AzureKeyVaultGlobalConfigurationEnvVarUamiTest {
-    public final JenkinsRule j = new JenkinsRule();
-
-    @Rule
-    public RuleChain chain = RuleChain
-            .outerRule(new EnvVarsRule()
-                    .set("AZURE_KEYVAULT_URL", "https://mine.vault.azure.net")
-                    .set("AZURE_KEYVAULT_UAMI_ENABLED", "true")
-                    )
-            .around(j);
+@WithJenkins
+@SetEnvironmentVariable(key = "AZURE_KEYVAULT_URL", value = "https://mine.vault.azure.net")
+@SetEnvironmentVariable(key = "AZURE_KEYVAULT_UAMI_ENABLED", value = "true")
+class AzureKeyVaultGlobalConfigurationEnvVarUamiTest {
 
     @Test
-    public void testValuesSet() {
+    void testValuesSet(JenkinsRule j) {
         AzureKeyVaultGlobalConfiguration configuration = AzureKeyVaultGlobalConfiguration.get();
 
         assertThat(configuration.getCredentialID(), is(AzureKeyVaultGlobalConfiguration.GENERATED_ID));
