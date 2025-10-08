@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.microsoft.azure.util.AzureCredentials;
 import java.util.List;
@@ -34,6 +35,7 @@ class AzureKeyVaultGlobalConfigurationSystemPropertySPSecretFileTest {
         System.clearProperty("jenkins.azure-keyvault.sp.subscription_id");
         System.clearProperty("jenkins.azure-keyvault.sp.tenant_id");
         System.clearProperty("jenkins.azure-keyvault.uami.enabled");
+        System.clearProperty("jenkins.azure-keyvault.sp.scope");
     }
 
     @Test
@@ -52,6 +54,7 @@ class AzureKeyVaultGlobalConfigurationSystemPropertySPSecretFileTest {
         assertThat(azureCredentials.getPlainClientSecret(), is("1255534"));
         assertThat(azureCredentials.getSubscriptionId(), is("5678"));
         assertThat(azureCredentials.getTenant(), is("tenant_id"));
+        assertThat(azureCredentials.getScope(), is(CredentialsScope.GLOBAL));
 
         // Test updating value
         System.setProperty("jenkins.azure-keyvault.url", "https://mine2.vault.azure.net");
@@ -59,6 +62,7 @@ class AzureKeyVaultGlobalConfigurationSystemPropertySPSecretFileTest {
         System.setProperty("jenkins.azure-keyvault.sp.client_secret_file", "src/test/resources/org/jenkinsci/plugins/azurekeyvaultplugin/secretfile2");
         System.setProperty("jenkins.azure-keyvault.sp.subscription_id", "9999");
         System.setProperty("jenkins.azure-keyvault.sp.tenant_id", "11111");
+        System.setProperty("jenkins.azure-keyvault.sp.scope", "system");
 
         configuration = AzureKeyVaultGlobalConfiguration.get();
 
@@ -74,5 +78,6 @@ class AzureKeyVaultGlobalConfigurationSystemPropertySPSecretFileTest {
         assertThat(azureCredentialsUpdated.getPlainClientSecret(), is("99999"));
         assertThat(azureCredentialsUpdated.getSubscriptionId(), is("9999"));
         assertThat(azureCredentialsUpdated.getTenant(), is("11111"));
+        assertThat(azureCredentialsUpdated.getScope(), is(CredentialsScope.SYSTEM));
     }
 }

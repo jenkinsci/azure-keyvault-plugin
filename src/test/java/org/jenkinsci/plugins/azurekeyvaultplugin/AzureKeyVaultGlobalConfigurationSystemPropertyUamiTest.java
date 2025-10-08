@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.microsoft.azure.util.AzureImdsCredentials;
 import org.junit.jupiter.api.AfterEach;
@@ -26,6 +27,7 @@ class AzureKeyVaultGlobalConfigurationSystemPropertyUamiTest {
     void after() {
         System.clearProperty("jenkins.azure-keyvault.url");
         System.clearProperty("jenkins.azure-keyvault.uami.enabled");
+        System.clearProperty("jenkins.azure-keyvault.sp.scope");
     }
 
     @Test
@@ -38,5 +40,21 @@ class AzureKeyVaultGlobalConfigurationSystemPropertyUamiTest {
         Credentials credentials = SystemCredentialsProvider.getInstance().getCredentials().get(0);
 
         assertThat(credentials, instanceOf(AzureImdsCredentials.class));
+        assertThat(credentials.getScope(), is(CredentialsScope.GLOBAL));
+
+    }
+    @Test
+    void testValuesSetWithScope(JenkinsRule j) {
+        System.setProperty("jenkins.azure-keyvault.sp.scope", "system");
+
+        AzureKeyVaultGlobalConfiguration configuration = AzureKeyVaultGlobalConfiguration.get();
+
+        assertThat(configuration.getCredentialID(), is(AzureKeyVaultGlobalConfiguration.GENERATED_ID));
+        assertThat(configuration.getKeyVaultURL(), is("https://mine.vault.azure.net"));
+
+        Credentials credentials = SystemCredentialsProvider.getInstance().getCredentials().get(0);
+
+        assertThat(credentials, instanceOf(AzureImdsCredentials.class));
+        assertThat(credentials.getScope(), is(CredentialsScope.SYSTEM));
     }
 }
