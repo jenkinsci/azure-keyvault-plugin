@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.microsoft.azure.util.AzureCredentials;
 import org.junit.jupiter.api.Test;
@@ -37,5 +38,23 @@ class AzureKeyVaultGlobalConfigurationEnvVarSPSecretFileTest {
         assertThat(azureCredentials.getPlainClientSecret(), is("1255534"));
         assertThat(azureCredentials.getSubscriptionId(), is("5678"));
         assertThat(azureCredentials.getTenant(), is("tenant_id"));
+        assertThat(azureCredentials.getScope(), is(CredentialsScope.GLOBAL));
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "AZURE_KEYVAULT_SP_SCOPE", value = "SYSTEM")
+    void testValuesSetWithScope(JenkinsRule j) {
+        AzureKeyVaultGlobalConfiguration configuration = AzureKeyVaultGlobalConfiguration.get();
+
+        assertThat(configuration.getCredentialID(), is(AzureKeyVaultGlobalConfiguration.GENERATED_ID));
+        assertThat(configuration.getCredentialID(), is(AzureKeyVaultGlobalConfiguration.GENERATED_ID));
+        assertThat(configuration.getKeyVaultURL(), is("https://mine.vault.azure.net"));
+
+        Credentials credentials = SystemCredentialsProvider.getInstance().getCredentials().get(0);
+
+        assertThat(credentials, instanceOf(AzureCredentials.class));
+        AzureCredentials azureCredentials = (AzureCredentials) credentials;
+
+        assertThat(azureCredentials.getScope(), is(CredentialsScope.SYSTEM));
     }
 }

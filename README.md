@@ -57,6 +57,7 @@ User or System Assigned Managed Identity:
 
 ```bash
 -Djenkins.azure-keyvault.uami.enabled=true
+-Djenkins.azure-keyvault.sp.scope=(GLOBAL|SYSTEM) # defaults to global
 ```
 
 Service principal:
@@ -66,6 +67,7 @@ Service principal:
 -Djenkins.azure-keyvault.sp.client_secret=...
 -Djenkins.azure-keyvault.sp.subscription_id=...
 -Djenkins.azure-keyvault.sp.tenant_id=...
+-Djenkins.azure-keyvault.sp.scope=(GLOBAL|SYSTEM) # defaults to global
 ```
 
 ### Via environment variables
@@ -80,6 +82,7 @@ User or System Assigned Managed Identity:
 
 ```bash
 AZURE_KEYVAULT_UAMI_ENABLED=true
+AZURE_KEYVAULT_SP_SCOPE=(GLOBAL|SYSTEM) # defaults to global
 ```
 
 Service principal:
@@ -89,6 +92,7 @@ AZURE_KEYVAULT_SP_CLIENT_ID=...
 AZURE_KEYVAULT_SP_CLIENT_SECRET=...
 AZURE_KEYVAULT_SP_SUBSCRIPTION_ID=...
 AZURE_KEYVAULT_SP_TENANT_ID=...
+AZURE_KEYVAULT_SP_SCOPE=(GLOBAL|SYSTEM) # defaults to global
 ```
 
 ## Passing a Secret File
@@ -99,6 +103,7 @@ It's possible to pass the secret from a file instead of passing the client secre
 -Djenkins.azure-keyvault.sp.client_secret_file=/path/to/secret/secretFile
 -Djenkins.azure-keyvault.sp.subscription_id=...
 -Djenkins.azure-keyvault.sp.tenant_id=...
+-Djenkins.azure-keyvault.sp.scope=(GLOBAL|SYSTEM) # defaults to global
 ```
 
 ```bash
@@ -106,6 +111,7 @@ AZURE_KEYVAULT_SP_CLIENT_ID=...
 AZURE_KEYVAULT_SP_CLIENT_SECRET_FILE=/path/to/secret/secretFile
 AZURE_KEYVAULT_SP_SUBSCRIPTION_ID=...
 AZURE_KEYVAULT_SP_TENANT_ID=...
+AZURE_KEYVAULT_SP_SCOPE=(GLOBAL|SYSTEM) # defaults to global
 ```
 
 The plugin will parse the contents of the file as is.  The file should only contain the client_secret value.

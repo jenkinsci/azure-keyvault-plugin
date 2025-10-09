@@ -24,6 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
@@ -97,18 +98,23 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
                 .filter(credentials -> (credentials instanceof AzureCredentials || credentials instanceof AzureImdsCredentials) && ((IdCredentials) credentials).getId().equals(GENERATED_ID))
                 .findAny();
 
-        String uami = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_UAMI_ENABLED", "jenkins.azure-keyvault.uami.enabled")
-                .orElse("false");
+        boolean isUami = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_UAMI_ENABLED", "jenkins.azure-keyvault.uami.enabled")
+                .map(u -> "true".equals(u))
+                .orElse(false);
+
+        CredentialsScope scope = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_SCOPE", "jenkins.azure-keyvault.sp.scope")
+                .map(s -> "SYSTEM".equalsIgnoreCase(s) ? CredentialsScope.SYSTEM : CredentialsScope.GLOBAL)
+                .orElse(CredentialsScope.GLOBAL);
 
         AzureBaseCredentials credentials;
-        if (uami.equals("true")) {
-            if (optionalCredentials.isPresent() && optionalCredentials.get() instanceof AzureImdsCredentials) {
+        if (isUami) {
+            if (optionalCredentials.filter(c -> c instanceof AzureImdsCredentials && scope.equals(c.getScope())).isPresent()) {
                 // don't overwrite the credential if it matches what we currently have so as we don't save to disk all the time
                 return Optional.empty();
             }
 
             credentials = new AzureImdsCredentials(
-                    CredentialsScope.GLOBAL, GENERATED_ID, GENERATED_DESCRIPTION
+                    scope, GENERATED_ID, GENERATED_DESCRIPTION
             );
             storeCredential(credentials);
             return Optional.of(credentials.getId());
@@ -134,24 +140,26 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
                         clientId,
                         clientSecret,
                         subscriptionId,
-                        tenantId)
+                        tenantId,
+                        scope)
         ) {
             // don't overwrite the credential if it matches what we currently have so as we don't save to disk all the time
             return Optional.empty();
         }
 
-        AzureCredentials azureCredentials = new AzureCredentials(CredentialsScope.GLOBAL, GENERATED_ID, GENERATED_DESCRIPTION, subscriptionId, clientId, clientSecret);
+        AzureCredentials azureCredentials = new AzureCredentials(scope, GENERATED_ID, GENERATED_DESCRIPTION, subscriptionId, clientId, clientSecret);
         azureCredentials.setTenant(tenantId);
 
         storeCredential(azureCredentials);
         return Optional.of(azureCredentials.getId());
     }
 
-    private boolean azureCredentialIsEqual(AzureCredentials creds, String clientId, String clientSecret, String subscriptionId, String tenantId) {
+    private boolean azureCredentialIsEqual(AzureCredentials creds, String clientId, String clientSecret, String subscriptionId, String tenantId, CredentialsScope scope) {
         return StringUtils.equals(creds.getClientId(), clientId) &&
                 StringUtils.equals(creds.getPlainClientSecret(), clientSecret) &&
                 StringUtils.equals(creds.getSubscriptionId(), subscriptionId) &&
-                StringUtils.equals(creds.getTenant(), tenantId);
+                StringUtils.equals(creds.getTenant(), tenantId) &&
+                ObjectUtils.equals(creds.getScope(), scope);
     }
 
     private Optional<String> getPropertyByEnvOrSystemProperty(String envVariable, String systemProperty) {
