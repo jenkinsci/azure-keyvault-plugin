@@ -125,135 +125,37 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         return itemId.substring(index + 1);
     }
 
-    private static Collection<IdCredentials> fetchCredentials() {
+    private static String getKeyVaultURL(AzureKeyVaultGlobalConfiguration azureKeyVaultGlobalConfiguration) {
+        String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
+        String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
+        if (StringUtils.isEmpty(keyVaultURL) || StringUtils.isEmpty(credentialID)) {
+            return null;
+        }
+
+        // If keyVaultURL does not have a trailing slash, add one
+        if (!keyVaultURL.endsWith("/")) {
+            keyVaultURL += "/";
+        }
+        return keyVaultURL;
+    }
+
+    private static List<IdCredentials> fetchCredentials() {
         AzureKeyVaultGlobalConfiguration azureKeyVaultGlobalConfiguration = GlobalConfiguration.all()
                 .get(AzureKeyVaultGlobalConfiguration.class);
         if (azureKeyVaultGlobalConfiguration == null) {
             throw new AzureKeyVaultException("No global key vault url configured.");
         }
-
         String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
         try {
-            String keyVaultURL = azureKeyVaultGlobalConfiguration.getKeyVaultURL();
-            if (StringUtils.isEmpty(keyVaultURL) || StringUtils.isEmpty(credentialID)) {
-                return Collections.emptyList();
-            }
-
-            // If keyVaultURL does not have a trailing slash, add one
-            if (!keyVaultURL.endsWith("/")) {
-                keyVaultURL += "/";
-            }
-
+            String keyVaultURL = getKeyVaultURL(azureKeyVaultGlobalConfiguration);
             SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
 
             String configuredLabelSelector = extractLabelSelector();
             List<IdCredentials> credentials = new ArrayList<>();
             for (SecretProperties secretItem : client.listPropertiesOfSecrets()) {
-                String id = secretItem.getId();
-                try {
-                    Map<String, String> tags = secretItem.getTags();
-
-                    if (tags == null) {
-                        tags = new HashMap<>();
-                    }
-                    if (StringUtils.isNotBlank(configuredLabelSelector)) {
-                        String secretLabelSelector = tags.getOrDefault("jenkins-label", "");
-                        List<String> secretLabels = Arrays.asList(secretLabelSelector.split(","));
-                        List<String> configuredLabels = Arrays.asList(configuredLabelSelector.split(","));
-                        if (secretLabels.stream().filter(configuredLabels::contains).findAny().isEmpty()) {
-                            continue;
-                        }
-                    }
-
-                    String type = tags.getOrDefault("type", DEFAULT_TYPE);
-                    String jenkinsID = tags.getOrDefault("jenkinsID", getSecretName(id));
-                    String description = tags.getOrDefault("description", "");
-                    String labelScope = tags.getOrDefault("scope", DEFAULT_SCOPE).toUpperCase();
-
-                    CredentialsScope scope = CredentialsScope.GLOBAL;
-
-                    if (tags.containsKey("scope") && labelScope.equalsIgnoreCase("SYSTEM")) {
-                        scope = CredentialsScope.SYSTEM;
-                    }
-
-                    // initial implementation didn't require a type
-                    if (tags.containsKey("username") && type.equals(DEFAULT_TYPE)) {
-                        type = "username";
-                    }
-
-                    switch (type) {
-                        case "string": {
-                            AzureSecretStringCredentials cred = new AzureSecretStringCredentials(scope, jenkinsID, description, new KeyVaultSecretRetriever(client, id));
-                            credentials.add(cred);
-                            break;
-                        }
-                        case "secretFile": {
-                            String fileName = tags.get("fileName");
-                            if(fileName.isEmpty()){
-                                fileName = getSecretName(id) + ".txt";
-                            }
-                            AzureSecretFileCredentials cred = new AzureSecretFileCredentials(scope, jenkinsID, description, fileName, new KeyVaultSecretRetriever(client, id));
-                            credentials.add(cred);
-                            break;
-                        }
-                        case "username": {
-                            AzureUsernamePasswordCredentials cred = new AzureUsernamePasswordCredentials(
-                                    scope, jenkinsID, tags.get("username"), description, new KeyVaultSecretRetriever(client, id)
-                            );
-                            credentials.add(cred);
-                            break;
-                        }
-                        case "sshUserPrivateKey": {
-                            String usernameSecretTag = tags.get("username-is-secret");
-                            String passphraseID = tags.get("passphrase-id");
-                            Secret passphrase = null;
-                            boolean usernameSecret = false;
-                            if (StringUtils.isNotBlank(usernameSecretTag)) {
-                                usernameSecret = Boolean.parseBoolean(usernameSecretTag);
-                            }
-                            if (StringUtils.isNotBlank(passphraseID)) {
-                                try {
-                                    passphrase = new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + passphraseID).get();
-                                } catch (Exception e) {
-                                    LOG.log(Level.WARNING, "Could not find passphrase with ID " + passphraseID + " in KeyVault.");
-                                    continue;
-                                }
-
-                            }
-                            AzureSSHUserPrivateKeyCredentials cred = new AzureSSHUserPrivateKeyCredentials(
-                                    scope, jenkinsID, description, tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)
-                            );
-                            credentials.add(cred);
-                            break;
-                        }
-                        case "certificate": {
-                            String passwordId = tags.get("password-id");
-                            Supplier<Secret> password = () -> Secret.fromString("");
-                            if (StringUtils.isNotBlank(passwordId)) {
-                                try {
-                                    password = new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + passwordId);
-                                } catch (Exception e) {
-                                    LOG.log(Level.WARNING, "Could not find password with ID " + passwordId + " in KeyVault.");
-                                    continue;
-                                }
-                            }
-                            AzureCertificateCredentials cred = new AzureCertificateCredentials(
-                                scope,
-                                jenkinsID,
-                                description,
-                                password,
-                                new KeyVaultSecretRetriever(client, id)
-                            );
-                            credentials.add(cred);
-                            break;
-                        }
-                        default: {
-                            throw new IllegalStateException("Unknown type: " + type);
-                        }
-                    }
-                }
-                catch(Exception e){
-                    LOG.log(Level.WARNING, "Error retrieving secret with id " + id + " from Azure KeyVault: " + e.getMessage(), e);
+                IdCredentials cred = mapPropertiesToCredentials(secretItem, configuredLabelSelector, client, keyVaultURL);
+                if (cred != null) {
+                    credentials.add(cred);
                 }
             }
             return credentials;
@@ -261,6 +163,108 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
             return Collections.emptyList();
         }
+    }
+
+    private static IdCredentials mapPropertiesToCredentials(
+            SecretProperties secretItem, String configuredLabelSelector, SecretClient client, String keyVaultURL
+    ) {
+        String id = secretItem.getId();
+        try {
+            Map<String, String> tags = secretItem.getTags();
+
+            if (tags == null) {
+                tags = new HashMap<>();
+            }
+            if (StringUtils.isNotBlank(configuredLabelSelector)) {
+                String secretLabelSelector = tags.getOrDefault("jenkins-label", "");
+                List<String> secretLabels = Arrays.asList(secretLabelSelector.split(","));
+                List<String> configuredLabels = Arrays.asList(configuredLabelSelector.split(","));
+                if (secretLabels.stream().filter(configuredLabels::contains).findAny().isEmpty()) {
+                    return null;
+                }
+            }
+
+            String type = tags.getOrDefault("type", DEFAULT_TYPE);
+            String jenkinsID = tags.getOrDefault("jenkinsID", getSecretName(id));
+            String description = tags.getOrDefault("description", "");
+            String labelScope = tags.getOrDefault("scope", DEFAULT_SCOPE).toUpperCase();
+
+            CredentialsScope scope = CredentialsScope.GLOBAL;
+
+            if (tags.containsKey("scope") && labelScope.equalsIgnoreCase("SYSTEM")) {
+                scope = CredentialsScope.SYSTEM;
+            }
+
+            // initial implementation didn't require a type
+            if (tags.containsKey("username") && type.equals(DEFAULT_TYPE)) {
+                type = "username";
+            }
+
+            switch (type) {
+                case "string": {
+                    return new AzureSecretStringCredentials(scope, jenkinsID, description, new KeyVaultSecretRetriever(client, id));
+                }
+                case "secretFile": {
+                    String fileName = tags.get("fileName");
+                    if(fileName.isEmpty()){
+                        fileName = getSecretName(id) + ".txt";
+                    }
+                    return new AzureSecretFileCredentials(scope, jenkinsID, description, fileName, new KeyVaultSecretRetriever(client, id));
+                }
+                case "username": {
+                    return new AzureUsernamePasswordCredentials(
+                            scope, jenkinsID, tags.get("username"), description, new KeyVaultSecretRetriever(client, id)
+                    );
+                }
+                case "sshUserPrivateKey": {
+                    String usernameSecretTag = tags.get("username-is-secret");
+                    String passphraseID = tags.get("passphrase-id");
+                    Secret passphrase = null;
+                    boolean usernameSecret = false;
+                    if (StringUtils.isNotBlank(usernameSecretTag)) {
+                        usernameSecret = Boolean.parseBoolean(usernameSecretTag);
+                    }
+                    if (StringUtils.isNotBlank(passphraseID)) {
+                        try {
+                            passphrase = new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + passphraseID).get();
+                        } catch (Exception e) {
+                            LOG.log(Level.WARNING, "Could not find passphrase with ID " + passphraseID + " in KeyVault.");
+                            return null;
+                        }
+
+                    }
+                    return new AzureSSHUserPrivateKeyCredentials(
+                            scope, jenkinsID, description, tags.get("username"), usernameSecret, passphrase, new KeyVaultSecretRetriever(client, id)
+                    );
+                }
+                case "certificate": {
+                    String passwordId = tags.get("password-id");
+                    Supplier<Secret> password = () -> Secret.fromString("");
+                    if (StringUtils.isNotBlank(passwordId)) {
+                        try {
+                            password = new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + passwordId);
+                        } catch (Exception e) {
+                            LOG.log(Level.WARNING, "Could not find password with ID " + passwordId + " in KeyVault.");
+                            return null;
+                        }
+                    }
+                    return new AzureCertificateCredentials(
+                        scope,
+                        jenkinsID,
+                        description,
+                        password,
+                        new KeyVaultSecretRetriever(client, id)
+                    );
+                }
+                default: {
+                    throw new IllegalStateException("Unknown type: " + type);
+                }
+            }
+        }
+        catch(Exception e){
+            LOG.log(Level.WARNING, "Error retrieving secret with id " + id + " from Azure KeyVault: " + e.getMessage(), e);
+        }
+        return null;
     }
 
     public static String extractLabelSelector() {
