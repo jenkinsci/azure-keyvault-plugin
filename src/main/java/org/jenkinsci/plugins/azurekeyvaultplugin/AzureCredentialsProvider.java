@@ -12,6 +12,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
 import com.microsoft.jenkins.keyvault.SecretClientCache;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
@@ -25,7 +26,6 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +55,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
 
     private final AzureCredentialsStore store = new AzureCredentialsStore(this);
 
-    private final LoadingCache<String, Collection<IdCredentials>> cache = Caffeine.newBuilder()
+    private final LoadingCache<String, Map<String, IdCredentials>> cache = Caffeine.newBuilder()
             .maximumSize(1L)
             .expireAfterWrite(Duration.ofMinutes(120))
             .refreshAfterWrite(Duration.ofMinutes(10))
@@ -64,6 +64,60 @@ public class AzureCredentialsProvider extends CredentialsProvider {
     public void refreshCredentials() {
         cache.invalidateAll();
     }
+
+    @Override
+    @CheckForNull
+    public <C extends IdCredentials> C getCredentialByIdInItem(
+            @NonNull String id,
+            @NonNull Class<C> type,
+            @NonNull Item item,
+            @NonNull Authentication authentication,
+            @NonNull List<DomainRequirement> domainRequirements) {
+        return getCredentialsById(id, type, item instanceof Jenkins, authentication);
+    }
+
+    @Override
+    @CheckForNull
+    public <C extends IdCredentials> C getCredentialByIdInItemGroup(
+            @NonNull String id,
+            @NonNull Class<C> type,
+            @NonNull ItemGroup<?> itemGroup,
+            @NonNull Authentication authentication,
+            @NonNull List<DomainRequirement> domainRequirements) {
+        return getCredentialsById(id, type, itemGroup instanceof Jenkins, authentication);
+    }
+
+    private <C extends IdCredentials> C getCredentialsById(String id, Class<C> type, boolean contextIsJenkins, Authentication authentication) {
+        if (ACL.SYSTEM2.equals(authentication)) {
+            try {
+                final Map<String, IdCredentials> credentials = cache.get(CACHE_KEY);
+                if (credentials == null) {
+                    throw new IllegalStateException("Cache is not working");
+                }
+
+                IdCredentials credential = credentials.get(id);
+                if (credential == null) {
+                    return null;
+                }
+                if (credential.getId().equals(id)) {
+                    if (CredentialsScope.SYSTEM == credential.getScope() && !(contextIsJenkins)) {
+                        LOG.log(Level.FINEST, "getCredentialById {0} has SYSTEM scope but the context is not Jenkins. Ignoring credential", credential.getId());
+                    } else if (type.isAssignableFrom(credential.getClass())) {
+                        // cast to keep generics happy even though we are assignable
+                        return type.cast(credential);
+                    } else {
+                        LOG.log(Level.FINEST, "getCredentialById {0} does not match", credential.getId());
+                    }
+                }
+            } catch (RuntimeException e) {
+                LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
+                return null;
+            }
+        }
+
+        return null;
+    }
+
     @NonNull
     @Override
     public <C extends Credentials> List<C> getCredentialsInItemGroup(
@@ -74,12 +128,12 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         if (ACL.SYSTEM2.equals(authentication)) {
             final ArrayList<C> list = new ArrayList<>();
             try {
-                Collection<IdCredentials> credentials = cache.get(CACHE_KEY);
+                Map<String, IdCredentials> credentials = cache.get(CACHE_KEY);
                 if (credentials == null) {
                     throw new IllegalStateException("Cache is not working");
                 }
 
-                for (IdCredentials credential : credentials) {
+                for (IdCredentials credential : credentials.values()) {
                     if (aClass.isAssignableFrom(credential.getClass())) {
                         if (CredentialsScope.SYSTEM == credential.getScope() && !(itemGroup instanceof Jenkins)) {
                             LOG.log(Level.FINEST, "getCredentials {0} has SYSTEM scope but the context is not Jenkins. Ignoring credential", credential.getId());
@@ -139,7 +193,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         return keyVaultURL;
     }
 
-    private static List<IdCredentials> fetchCredentials() {
+    private static Map<String, IdCredentials> fetchCredentials() {
         AzureKeyVaultGlobalConfiguration azureKeyVaultGlobalConfiguration = GlobalConfiguration.all()
                 .get(AzureKeyVaultGlobalConfiguration.class);
         if (azureKeyVaultGlobalConfiguration == null) {
@@ -151,17 +205,17 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
 
             String configuredLabelSelector = extractLabelSelector();
-            List<IdCredentials> credentials = new ArrayList<>();
+            Map<String, IdCredentials> credentials = new HashMap<>();
             for (SecretProperties secretItem : client.listPropertiesOfSecrets()) {
                 IdCredentials cred = mapPropertiesToCredentials(secretItem, configuredLabelSelector, client, keyVaultURL);
                 if (cred != null) {
-                    credentials.add(cred);
+                    credentials.put(cred.getId(), cred);
                 }
             }
             return credentials;
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
-            return Collections.emptyList();
+            return Collections.emptyMap();
         }
     }
 
