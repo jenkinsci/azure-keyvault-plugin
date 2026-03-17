@@ -197,11 +197,17 @@ public class AzureCredentialsProvider extends CredentialsProvider {
         AzureKeyVaultGlobalConfiguration azureKeyVaultGlobalConfiguration = GlobalConfiguration.all()
                 .get(AzureKeyVaultGlobalConfiguration.class);
         if (azureKeyVaultGlobalConfiguration == null) {
-            throw new AzureKeyVaultException("No global key vault url configured.");
+            return Collections.emptyMap();
         }
         String credentialID = azureKeyVaultGlobalConfiguration.getCredentialID();
+        if (credentialID == null) {
+            return Collections.emptyMap();
+        }
         try {
             String keyVaultURL = getKeyVaultURL(azureKeyVaultGlobalConfiguration);
+            if (keyVaultURL == null) {
+                return Collections.emptyMap();
+            }
             SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
 
             String configuredLabelSelector = extractLabelSelector();
