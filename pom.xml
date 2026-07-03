@@ -85,6 +85,13 @@
 
     <!-- optional deps -->
     <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>github-branch-source</artifactId>
+      <!-- Not managed by bom-${jenkins.baseline}.x; pin the newest version whose required core <= ${jenkins.baseline}.3 -->
+      <version>1917.v9ee8a_39b_3d0d</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
       <optional>true</optional>
