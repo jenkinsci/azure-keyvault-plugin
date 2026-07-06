@@ -333,10 +333,7 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                 }
             }
         }
-        // LinkageError (incl. NoClassDefFoundError) is caught so a secret referencing an optional
-        // plugin class that is present-but-incompatible at runtime is skipped in isolation, rather
-        // than aborting the whole fetch and dropping every other credential.
-        catch (Exception | LinkageError e) {
+        catch(Exception e){
             LOG.log(Level.WARNING, "Error retrieving secret with id " + id + " from Azure KeyVault: " + e.getMessage(), e);
         }
         return null;
