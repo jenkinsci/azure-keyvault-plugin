@@ -38,12 +38,11 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.certificate.AzureCertificateCredentials;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.githubapp.GitHubAppCredentialsFactory;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.secretfile.AzureSecretFileCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.sshuserprivatekey.AzureSSHUserPrivateKeyCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string.AzureSecretStringCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.usernamepassword.AzureUsernamePasswordCredentials;
-import org.jenkinsci.plugins.github_branch_source.GitHubAppCredentials;
-import org.jenkinsci.plugins.github_branch_source.app_credentials.AccessSpecifiedRepositories;
 import org.springframework.security.core.Authentication;
 
 
@@ -319,13 +318,15 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                     );
                 }
                 case "githubApp": {
-                    // GitHubAppCredentials lives in the optional github-branch-source plugin.
-                    // Guard on its presence so referencing the class can't break the whole fetch loop.
+                    // GitHubAppCredentials comes from the optional github-branch-source plugin. Confirm
+                    // it is installed *before* touching GitHubAppCredentialsFactory, which is the only
+                    // class that references it: that call is what loads those plugin classes, so the
+                    // guard keeps a missing optional plugin from breaking this (or any other) credential.
                     if (Jenkins.get().getPluginManager().getPlugin("github-branch-source") == null) {
-                        LOG.log(Level.WARNING, "Skipping GitHub App credential {0}: github-branch-source plugin is not installed", id);
+                        LOG.log(Level.WARNING, "Skipping GitHub App credential {0}: github-branch-source plugin is not installed", jenkinsID);
                         return null;
                     }
-                    return createGitHubAppCredentials(scope, jenkinsID, description, tags, new KeyVaultSecretRetriever(client, id));
+                    return GitHubAppCredentialsFactory.create(scope, jenkinsID, description, tags, new KeyVaultSecretRetriever(client, id));
                 }
                 default: {
                     throw new IllegalStateException("Unknown type: " + type);
@@ -333,44 +334,12 @@ public class AzureCredentialsProvider extends CredentialsProvider {
             }
         }
         // LinkageError (incl. NoClassDefFoundError) is caught so a secret referencing an optional
-        // plugin class that is absent/mismatched at runtime is skipped in isolation, rather than
-        // aborting the whole fetch and dropping every other credential.
-        catch(Exception | LinkageError e){
+        // plugin class that is present-but-incompatible at runtime is skipped in isolation, rather
+        // than aborting the whole fetch and dropping every other credential.
+        catch (Exception | LinkageError e) {
             LOG.log(Level.WARNING, "Error retrieving secret with id " + id + " from Azure KeyVault: " + e.getMessage(), e);
         }
         return null;
-    }
-
-    /**
-     * Builds a native {@link GitHubAppCredentials} from a vault secret's tags. The private key is
-     * materialized eagerly (via {@code privateKey.get()}) because {@code GitHubAppCredentials} reads
-     * its key field directly during token generation and cannot resolve it lazily.
-     *
-     * @return the credential, or {@code null} if the required {@code appID} tag is missing/blank.
-     */
-    @VisibleForTesting
-    static GitHubAppCredentials createGitHubAppCredentials(
-            CredentialsScope scope, String jenkinsID, String description,
-            Map<String, String> tags, Supplier<Secret> privateKey
-    ) {
-        String appId = tags.get("appID");
-        if (StringUtils.isBlank(appId)) {
-            LOG.log(Level.WARNING, "Skipping GitHub App credential {0}: missing required 'appID' tag", jenkinsID);
-            return null;
-        }
-        GitHubAppCredentials cred = new GitHubAppCredentials(scope, jenkinsID, description, appId, privateKey.get());
-        String owner = tags.get("owner");
-        if (StringUtils.isNotBlank(owner)) {
-            // Scope the app to a single owner. Equivalent to the deprecated setOwner(owner) but without
-            // triggering the CasC MigrationAdminMonitor on every cache refresh. Empty repository list
-            // means "all repositories the app can access for this owner".
-            cred.setRepositoryAccessStrategy(new AccessSpecifiedRepositories(owner, Collections.emptyList()));
-        }
-        String apiUri = tags.get("apiUri");
-        if (StringUtils.isNotBlank(apiUri)) {
-            cred.setApiUri(apiUri);
-        }
-        return cred;
     }
 
     public static String extractLabelSelector() {

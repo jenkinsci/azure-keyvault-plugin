@@ -1,10 +1,12 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.IdCredentials;
 import hudson.util.Secret;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.githubapp.GitHubAppCredentialsFactory;
 import org.jenkinsci.plugins.github_branch_source.GitHubAppCredentials;
 import org.jenkinsci.plugins.github_branch_source.app_credentials.AccessSpecifiedRepositories;
 import org.junit.jupiter.api.Test;
@@ -37,7 +39,7 @@ class AzureGitHubAppCredentialsTest {
 
     @Test
     void mapsAllTagsToNativeGitHubAppCredentials(JenkinsRule j) {
-        GitHubAppCredentials cred = AzureCredentialsProvider.createGitHubAppCredentials(
+        IdCredentials result = GitHubAppCredentialsFactory.create(
                 CredentialsScope.GLOBAL,
                 "my-app",
                 "desc",
@@ -45,7 +47,8 @@ class AzureGitHubAppCredentialsTest {
                 key());
 
         // Native type so github-branch-source's `instanceof GitHubAppCredentials` dispatch accepts it.
-        assertThat(cred, instanceOf(GitHubAppCredentials.class));
+        assertThat(result, instanceOf(GitHubAppCredentials.class));
+        GitHubAppCredentials cred = (GitHubAppCredentials) result;
         assertThat(cred.getId(), is("my-app"));
         assertThat(cred.getDescription(), is("desc"));
         assertThat(cred.getScope(), is(CredentialsScope.GLOBAL));
@@ -59,18 +62,21 @@ class AzureGitHubAppCredentialsTest {
 
     @Test
     void ownerAndApiUriAreOptional(JenkinsRule j) {
-        GitHubAppCredentials cred = AzureCredentialsProvider.createGitHubAppCredentials(
+        IdCredentials result = GitHubAppCredentialsFactory.create(
                 CredentialsScope.GLOBAL, "app2", "", tags("type", "githubApp", "appID", "999"), key());
 
+        assertThat(result, instanceOf(GitHubAppCredentials.class));
+        GitHubAppCredentials cred = (GitHubAppCredentials) result;
         assertThat(cred.getAppID(), is("999"));
         assertThat(cred.getApiUri(), nullValue());
         // No owner tag -> no owner scoping applied
+        assertThat(cred.getRepositoryAccessStrategy(), instanceOf(AccessSpecifiedRepositories.class));
         assertThat(((AccessSpecifiedRepositories) cred.getRepositoryAccessStrategy()).getOwner(), nullValue());
     }
 
     @Test
     void missingAppIdTagIsSkipped(JenkinsRule j) {
-        assertNull(AzureCredentialsProvider.createGitHubAppCredentials(
+        assertNull(GitHubAppCredentialsFactory.create(
                 CredentialsScope.GLOBAL, "app3", "", tags("type", "githubApp"), key()));
     }
 }
