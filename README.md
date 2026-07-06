@@ -268,6 +268,10 @@ To use a different type add a tag called `type` with one of the below values:
   - (optional) add a tag `passphrase-id` that points to the secret name in the vault that has the passphrase that should be used with the ssh keys
 - `certificate` - a certificate as secret
   - (optional) add tag `password-id` that points to the secret name in the vault that has the password of the certificate.
+- `githubApp` - a GitHub App credential (requires the `github-branch-source` plugin to be installed)
+  - add a tag `appID` for the GitHub App ID (**required**)
+  - (optional) add a tag `owner` for the organisation/user the app is scoped to (leave unset if the app is installed on a single organisation)
+  - (optional) add a tag `apiUri` for the GitHub API endpoint (GitHub Enterprise only)
 
 #### Secret String
 
@@ -473,6 +477,33 @@ node {
     }
 }
 ```
+
+#### GitHub App
+
+It is possible to load [GitHub App credentials](https://github.com/jenkinsci/github-branch-source-plugin/blob/master/docs/github-app.adoc) from the vault.
+This requires the `github-branch-source` plugin to be installed; if it is not, secrets tagged `type=githubApp` are skipped (a warning is logged) and all other credentials still load.
+
+The vault-secret value must be the GitHub App private key in **PKCS#8 PEM** format. GitHub issues the key in PKCS#1; convert it once with:
+
+```bash
+openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt \
+  -in downloaded-github-app-key.pem \
+  -out github-app-key.pkcs8.pem
+```
+
+Store the converted key, tagging it with the App ID (and, optionally, the owner / API endpoint):
+
+```bash
+az keyvault secret set \
+  --tags type=githubApp appID=123456 owner=my-org \
+  --vault-name my-vault \
+  --name my-github-app \
+  --file github-app-key.pkcs8.pem
+```
+
+For GitHub Enterprise, also add `apiUri=https://ghe.example.com/api/v3` to the tags.
+
+The credential is exposed as a native `GitHubAppCredentials`, so it can be selected anywhere a GitHub App credential is accepted (e.g. GitHub Branch Source, the `checkout`/`git` steps). Note that, unlike the other types, the private key is read from the vault when credentials are refreshed rather than lazily on use, because `GitHubAppCredentials` reads its key eagerly during token generation.
 
 #### Secret Labels
 

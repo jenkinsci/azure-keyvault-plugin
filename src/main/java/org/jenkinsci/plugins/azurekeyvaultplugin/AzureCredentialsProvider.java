@@ -38,6 +38,7 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.certificate.AzureCertificateCredentials;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.githubapp.GitHubAppCredentialsFactory;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.secretfile.AzureSecretFileCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.sshuserprivatekey.AzureSSHUserPrivateKeyCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string.AzureSecretStringCredentials;
@@ -315,6 +316,17 @@ public class AzureCredentialsProvider extends CredentialsProvider {
                         password,
                         new KeyVaultSecretRetriever(client, id)
                     );
+                }
+                case "githubApp": {
+                    // GitHubAppCredentials comes from the optional github-branch-source plugin. Confirm
+                    // it is installed *before* touching GitHubAppCredentialsFactory, which is the only
+                    // class that references it: that call is what loads those plugin classes, so the
+                    // guard keeps a missing optional plugin from breaking this (or any other) credential.
+                    if (Jenkins.get().getPluginManager().getPlugin("github-branch-source") == null) {
+                        LOG.log(Level.WARNING, "Skipping GitHub App credential {0}: github-branch-source plugin is not installed", jenkinsID);
+                        return null;
+                    }
+                    return GitHubAppCredentialsFactory.create(scope, jenkinsID, description, tags, new KeyVaultSecretRetriever(client, id));
                 }
                 default: {
                     throw new IllegalStateException("Unknown type: " + type);
