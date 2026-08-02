@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.azurekeyvaultplugin.AzureCredentialsProvider;
 import org.jvnet.localizer.ResourceBundleHolder;
 
