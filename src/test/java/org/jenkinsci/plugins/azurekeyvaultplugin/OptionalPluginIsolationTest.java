@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import hudson.ExtensionList;
-import org.jenkinsci.plugins.azurekeyvaultplugin.provider.global.AzureCredentialsProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;

@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.azurekeyvaultplugin.provider.global;
+package org.jenkinsci.plugins.azurekeyvaultplugin;
 
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;

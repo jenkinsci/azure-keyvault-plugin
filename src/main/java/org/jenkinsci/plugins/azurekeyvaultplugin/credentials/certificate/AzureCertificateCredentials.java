@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.jenkinsci.plugins.azurekeyvaultplugin.provider.CredentialsProviderHelper;
+import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
 import org.jvnet.localizer.ResourceBundleHolder;
 
 public class AzureCertificateCredentials extends BaseStandardCredentials implements StandardCertificateCredentials {
@@ -120,7 +120,7 @@ public class AzureCertificateCredentials extends BaseStandardCredentials impleme
 
         @Override
         public boolean isApplicable(CredentialsProvider provider) {
-            return CredentialsProviderHelper.isAzureCredentialsProvider(provider);
+            return BaseAzureKeyVaultCredentialsProvider.isAzureKeyVaultProvider(provider);
         }
     }
 }

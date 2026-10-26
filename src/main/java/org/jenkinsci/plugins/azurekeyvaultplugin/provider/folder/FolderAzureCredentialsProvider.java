@@ -50,6 +50,7 @@ import org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultException;
 import org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultUtil;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string.AzureSecretStringCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.usernamepassword.AzureUsernamePasswordCredentials;
+import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
 import org.jenkinsci.plugins.azurekeyvaultplugin.provider.KeyVaultSecretRetriever;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -58,7 +59,7 @@ import org.kohsuke.stapler.verb.POST;
 
 
 @Extension(optional = true)
-public class FolderAzureCredentialsProvider extends CredentialsProvider {
+public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentialsProvider {
     private static final Logger LOG = Logger.getLogger(FolderAzureCredentialsProvider.class.getName());
 
     private static final String CACHE_KEY = "key";
@@ -236,11 +237,6 @@ public class FolderAzureCredentialsProvider extends CredentialsProvider {
             return property.getStore();
         }
         return null;
-    }
-
-    @Override
-    public String getIconClassName() {
-        return "icon-azure-key-vault-credentials-store";
     }
 
     public static class FolderAzureKeyVaultCredentialsProperty extends AbstractFolderProperty<AbstractFolder<?>> {

@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
-import org.jenkinsci.plugins.azurekeyvaultplugin.provider.CredentialsProviderHelper;
+import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
 import org.jvnet.localizer.ResourceBundleHolder;
 
 public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials implements SSHUserPrivateKey {
@@ -99,7 +99,7 @@ public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials i
 
         @Override
         public boolean isApplicable(CredentialsProvider provider) {
-            return CredentialsProviderHelper.isAzureCredentialsProvider(provider);
+            return BaseAzureKeyVaultCredentialsProvider.isAzureKeyVaultProvider(provider);
         }
     }
 }
