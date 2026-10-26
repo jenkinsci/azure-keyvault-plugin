@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.jenkinsci.plugins.azurekeyvaultplugin.AzureCredentialsProvider
+package org.jenkinsci.plugins.azurekeyvaultplugin.provider.global.AzureCredentialsProvider
 
 import com.cloudbees.plugins.credentials.CredentialsProvider
 import hudson.security.ACL

@@ -15,7 +15,7 @@ The plugin acts as an Azure Active Directory Application and must be configured 
 
 In the Jenkins **Configure System** page, configure the following two options in the **Azure Key Vault Plugin** section
 * **Key Vault URL** - The url where your Key Vault resides (e.g. `https://myvault.vault.azure.net/`)
-* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are: 
+* **Credential ID** - The ID associated with a secret in the Jenkins secret store. Supported types are:
     - **Azure Service Principal**
     - **Azure Managed Identity** (both user and system assigned)
 
@@ -57,6 +57,7 @@ User or System Assigned Managed Identity:
 
 ```bash
 -Djenkins.azure-keyvault.uami.enabled=true
+-Djenkins.azure-keyvault.sp.scope=(GLOBAL|SYSTEM) # defaults to global
 ```
 
 Service principal:
@@ -66,6 +67,7 @@ Service principal:
 -Djenkins.azure-keyvault.sp.client_secret=...
 -Djenkins.azure-keyvault.sp.subscription_id=...
 -Djenkins.azure-keyvault.sp.tenant_id=...
+-Djenkins.azure-keyvault.sp.scope=(GLOBAL|SYSTEM) # defaults to global
 ```
 
 ### Via environment variables
@@ -80,6 +82,7 @@ User or System Assigned Managed Identity:
 
 ```bash
 AZURE_KEYVAULT_UAMI_ENABLED=true
+AZURE_KEYVAULT_SP_SCOPE=(GLOBAL|SYSTEM) # defaults to global
 ```
 
 Service principal:
@@ -89,7 +92,29 @@ AZURE_KEYVAULT_SP_CLIENT_ID=...
 AZURE_KEYVAULT_SP_CLIENT_SECRET=...
 AZURE_KEYVAULT_SP_SUBSCRIPTION_ID=...
 AZURE_KEYVAULT_SP_TENANT_ID=...
+AZURE_KEYVAULT_SP_SCOPE=(GLOBAL|SYSTEM) # defaults to global
 ```
+
+## Passing a Secret File
+It's possible to pass the secret from a file instead of passing the client secret as is.  Simply provide the path to the secret file.
+
+```bash
+-Djenkins.azure-keyvault.sp.client_id=...
+-Djenkins.azure-keyvault.sp.client_secret_file=/path/to/secret/secretFile
+-Djenkins.azure-keyvault.sp.subscription_id=...
+-Djenkins.azure-keyvault.sp.tenant_id=...
+-Djenkins.azure-keyvault.sp.scope=(GLOBAL|SYSTEM) # defaults to global
+```
+
+```bash
+AZURE_KEYVAULT_SP_CLIENT_ID=...
+AZURE_KEYVAULT_SP_CLIENT_SECRET_FILE=/path/to/secret/secretFile
+AZURE_KEYVAULT_SP_SUBSCRIPTION_ID=...
+AZURE_KEYVAULT_SP_TENANT_ID=...
+AZURE_KEYVAULT_SP_SCOPE=(GLOBAL|SYSTEM) # defaults to global
+```
+
+The plugin will parse the contents of the file as is.  The file should only contain the client_secret value.
 
 ## Building the Plugin
 * Run **mvn package**, an .hpi file will be generated in the target folder.
@@ -125,7 +150,7 @@ node {
 With overrides:
 ```groovy
 static LinkedHashMap<String, Object> secret(String secretName, String envVar) {
-  [ 
+  [
     secretType: 'Secret',
     name: secretName,
     version: '342432lkjhdasjld',
@@ -139,7 +164,7 @@ node {
     ]
 
     withAzureKeyvault(
-            azureKeyVaultSecrets: secrets, 
+            azureKeyVaultSecrets: secrets,
             keyVaultURLOverride: 'https://mykeyvault.vault.azure.net',
             credentialIDOverride: 'service-principal'
     ) {
@@ -180,8 +205,8 @@ pipeline {
         stage('Build') {
             options {
               azureKeyVault(
-                credentialID: 'my-sp', 
-                keyVaultURL: 'https://my.vault.azure.net', 
+                credentialID: 'my-sp',
+                keyVaultURL: 'https://my.vault.azure.net',
                 secrets: [
                     [envVariable: 'MY_SECRET', name: 'my-secret', secretType: 'Secret']
                 ]
@@ -217,6 +242,8 @@ on the pfx when you import it, if you're importing it back into Azure somewhere 
 
 ### Azure Key Vault Credentials Provider
 
+> Note: It is not supported to configure the credential provider with the Configuration as Code plugin *and* resolving credentials from Azure Key Vault in the same configuration file. Please use one of the other options (system properties, environment variables) if you want to retrieve secrets for use in Configuration as Code files
+
 This plugin enables the retrieval of Secrets directly from Azure Key Vault.
 After the configuration is set up, secrets from the key vault can be viewed in the credentials page like this:
 
@@ -226,6 +253,27 @@ After the configuration is set up, secrets from the key vault can be viewed in t
 You can reload the cache on the system configuration page if you need a new secret to appear.
 
 Use these credentials just as other normal credentials in Jenkins.
+
+There are multiple supported credential types, `string` is used by default.
+To use a different type add a tag called `type` with one of the below values:
+
+- `string` - Secret text
+- `username` - Username with password
+  - add a tag `username` for the username of the credential
+- `secretFile` - a file with secret content
+  - (optional) add a tag `fileName`  for the secret file name, when it is fetched. Default is `${secretNameIntheVault}.txt`.
+- `sshUserPrivateKey` - SSH Private key
+  - add a tag `username` for the username of the credential
+  - (optional) add a tag `username-is-secret` and set it to true to hide the username in the build logs
+  - (optional) add a tag `passphrase-id` that points to the secret name in the vault that has the passphrase that should be used with the ssh keys
+- `certificate` - a certificate as secret
+  - (optional) add tag `password-id` that points to the secret name in the vault that has the password of the certificate.
+- `githubApp` - a GitHub App credential (requires the `github-branch-source` plugin to be installed)
+  - add a tag `appID` for the GitHub App ID (**required**)
+  - (optional) add a tag `owner` for the organisation/user the app is scoped to (leave unset if the app is installed on a single organisation)
+  - (optional) add a tag `apiUri` for the GitHub API endpoint (GitHub Enterprise only)
+
+#### Secret String
 
 Declarative Pipeline:
 
@@ -255,12 +303,16 @@ node {
 }
 ```
 
-It is also possible to use it as a 'Username with password' credentials, to do so, tag the secret with the desired `username`:  
+#### Username with password
+
 ```bash
-az keyvault secret set --vault-name my-vault --name github-pat --value my-pat --tags username=github-user
+az keyvault secret set --vault-name my-vault \
+  --name github-pat \
+  --value my-pat \
+  --tags username=github-user type=username
 ```
 
-Scripted Pipeline:  
+Scripted Pipeline:
 ```groovy
 job('my example') {
     scm {
@@ -272,6 +324,246 @@ job('my example') {
         }
     }
 }
+```
+
+#### Secret file
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name a-secret-file-vault-secret \
+  --value "-----BEGIN test secretFile-----\nline 1\nline2\nbla\nblob" \
+  --tags type=secretFile fileName=mySecretFile.txt
+```
+
+Scripted Pipeline:
+```groovy
+node {
+    withCredentials([
+      file(credentialsId: "test-secretFile-credentialsId", variable: "VARIABLE_CONTAINING_PATH_TO_SECRET_FILE")]) {
+      sh("doSomething --use-this-secret-file \$VARIABLE_CONTAINING_PATH_TO_SECRET_FILE")
+    }
+}
+```
+
+
+#### SSH Username with private key
+
+```bash
+az keyvault secret set --tags type=sshUserPrivateKey username=my-username \
+  --vault-name my-vault \
+  --name test-ssh \
+  -f ~/.ssh/my-ssh-key
+```
+
+Scripted pipeline:
+
+```bash
+# This is a docker image that can be used to test out this feature
+docker run --rm -it --publish 2222:2222 \
+  -e "PUBLIC_KEY=my-public-key" linuxserver/openssh-server
+```
+
+```groovy
+node {
+    withCredentials([sshUserPrivateKey(credentialsId: "test-ssh", keyFileVariable: "my_ssh_key", usernameVariable: "my_username")]) {
+     sh 'ssh -i $my_ssh_key -p 2222 $my_username@localhost "uname -r"'
+    }
+}
+```
+
+Declarative pipeline:
+
+```groovy
+pipeline {
+    agent any
+    environment {
+        SSH_PRIVATE_KEY = credentials('test-ssh')
+    }
+    stages {
+        stage('Foo') {
+            steps {
+                sh 'ssh -i $SSH_PRIVATE_KEY -p 2222 $SSH_PRIVATE_KEY_USR@localhost "cat world"'
+            }
+        }
+    }
+}
+```
+
+##### SSH Username with private key and passphrase
+
+If your SSH private keys has a passphrase you need to add a tag `passphrase-id` which references the secret that the passphrase is stored in.
+
+
+Create the passphrase secret:
+
+```bash
+az keyvault secret set \
+  --vault-name my-vault \
+  --name test-ssh-passphrase \
+  --value my-ssh-passphrase
+```
+
+Store the SSH key with the passphrase tag:
+
+```bash
+az keyvault secret set --tags type=sshUserPrivateKey username=my-username passphrase-id=test-ssh-passphrase \
+  --vault-name my-vault \
+  --name test-ssh \
+  -f ~/.ssh/my-ssh-key
+```
+
+If the passphrase can not be found in the vault, the secret will not load and a warning will be logged.
+
+#### Certificate
+
+It is possible to load certificates from the vault.
+The certificate needs to be stored in a vault-secret **base64-encoded** and **without whitespace**.
+In addition to the secret containing the keystore info (the certificate), another vault-secret is needed to store the password of the keystore.
+
+1. If the certificate is protected by a password, Create the password secret:
+
+```bash
+az keyvault secret set \
+  --vault-name my-vault \
+  --name secret-containing-keystore-password \
+  --value my-keystore-password
+```
+
+2. Store the (**base64-encoded** and **without whitespace**) keystore with the password tag:
+
+  if the certificate is protected by a password:
+
+```bash
+az keyvault secret set \
+  --tags type=certificate password-id=secret-containing-keystore-password \
+  --vault-name my-vault \
+  --name secret-containing-base64encoded-keystore \
+  --value {base64-encoded-keystore}
+```
+
+  if the certificate has no password ( a zero length password )
+
+```bash
+az keyvault secret set \
+  --tags type=certificate \
+  --vault-name my-vault \
+  --name secret-containing-base64encoded-keystore \
+  --value {base64-encoded-keystore}
+```
+
+If the tag `password-id` is set but the password can not be found in the vault, the secret will not load and a warning will be logged.
+If the keystore cannot be decoded, or cannot be loaded the pipeline using the certificate-credentialsId will throw an error.
+
+
+Scripted pipeline:
+
+```groovy
+node {
+    withCredentials([
+        certificate(
+            credentialsId: certificateCredentialsId,
+            keystoreVariable: 'PATH_TO_KEYSTORE',
+            passwordVariable: 'PASSWORD'
+        )
+    ]) {
+      sh(
+        script: """
+            curl -X POST \
+                --cert-type P12 \
+                --cert "\$PATH_TO_KEYSTORE":\$PASSWORD \
+                ${url}
+        """
+      )
+    }
+}
+```
+
+#### GitHub App
+
+It is possible to load [GitHub App credentials](https://github.com/jenkinsci/github-branch-source-plugin/blob/master/docs/github-app.adoc) from the vault.
+This requires the `github-branch-source` plugin to be installed; if it is not, secrets tagged `type=githubApp` are skipped (a warning is logged) and all other credentials still load.
+
+The vault-secret value must be the GitHub App private key in **PKCS#8 PEM** format. GitHub issues the key in PKCS#1; convert it once with:
+
+```bash
+openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt \
+  -in downloaded-github-app-key.pem \
+  -out github-app-key.pkcs8.pem
+```
+
+Store the converted key, tagging it with the App ID (and, optionally, the owner / API endpoint):
+
+```bash
+az keyvault secret set \
+  --tags type=githubApp appID=123456 owner=my-org \
+  --vault-name my-vault \
+  --name my-github-app \
+  --file github-app-key.pkcs8.pem
+```
+
+For GitHub Enterprise, also add `apiUri=https://ghe.example.com/api/v3` to the tags.
+
+The credential is exposed as a native `GitHubAppCredentials`, so it can be selected anywhere a GitHub App credential is accepted (e.g. GitHub Branch Source, the `checkout`/`git` steps). Note that, unlike the other types, the private key is read from the vault when credentials are refreshed rather than lazily on use, because `GitHubAppCredentials` reads its key eagerly during token generation.
+
+#### Secret Labels
+
+You can filter which secrets are visible to the credentials provider.
+By default, the plugin will load all secrets stored within the Key Vault.
+However, your Key Vault may be the Secret Source for multiple applications, or contains secrets not needed directly by Jenkins.
+To filter out secrets from being set, add a System Property or Environment Variable:
+
+**Via System Property**:
+
+```bash
+-Djenkins.azure-keyvault.label-selector=myCustomLabel
+```
+
+**Via Environment Variable**:
+
+```bash
+AZURE_KEYVAULT_LABEL_SELECTOR=myCustomLabel
+```
+
+If included in your config, when the Azure Key Vault plugin is resolving credentials from your Key Vault, it will skip any secret that does not contain a tag `jenkins-label=myCustomLabel`.  For example, if two secrets are set within the KeyVault:
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name testUserNoLabel \
+  --value example1 \
+  --tags username=testUserNoLabel type=username
+```
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name testUserWithLabel \
+  --value example2 \
+  --tags username=testUserWithLabel type=username jenkins-label=myCustomLabel
+```
+
+Multiple label selectors can be specified as a comma separated list:
+
+```bash
+AZURE_KEYVAULT_LABEL_SELECTOR=myCustomLabel,anotherCustomLabel
+```
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name testUserWithLabel \
+  --value example2 \
+  --tags jenkins-label=myCustomLabel1,myCustomLabel2
+```
+
+With the System Property or Environment variable being set in this example, only the usernamePassword `testUserWithLabel` will be present in your Jenkins instance.
+
+#### Jenkins Credential ID, Description and Scope
+
+The ID, description and scope of credentials can be specified with tags on the Azure Key Vault secret. The ID is specified with the tag "jenkinsID" and appears in the Jenkins credentials UI in the "ID" column. This is the credentials ID parameter used in `withCredentials()` calls. The description is specified with the tag "description" and appears in the Jenkins credentials UI in the "Name" column. The scope is specified with the tag "scope" and can be set to "system" or "global". By default the scope will be set to global.
+
+```bash
+az keyvault secret set --vault-name my-vault \
+  --name testUserWithLabel \
+  --value example2 \
+  --tags jenkinsID=myCred description="This is my credential" scope=system
 ```
 
 ### SecretSource

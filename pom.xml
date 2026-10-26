@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.24</version>
+    <version>6.2236.v12dd4c483242</version>
     <relativePath />
   </parent>
   <artifactId>azure-keyvault</artifactId>
@@ -15,9 +15,12 @@
   <properties>
     <changelist>9999-SNAPSHOT</changelist>
     <gitHubRepo>jenkinsci/azure-keyvault-plugin</gitHubRepo>
-    <jenkins.version>2.277.2</jenkins.version>
-    <java.level>8</java.level>
+    <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
+    <jenkins.baseline>2.555</jenkins.baseline>
+    <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <hpi.compatibleSinceVersion>2.0</hpi.compatibleSinceVersion>
+    <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
+    <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
   </properties>
 
   <name>Azure Key Vault Plugin</name>
@@ -31,16 +34,9 @@
     </license>
   </licenses>
 
-  <developers>
-    <developer>
-      <id>timja</id>
-      <name>Tim Jacomb</name>
-    </developer>
-  </developers>
-
   <scm>
-    <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
-    <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
+    <connection>scm:git:https://github.com/${gitHubRepo}</connection>
+    <developerConnection>scm:git:https://github.com/${gitHubRepo}</developerConnection>
     <url>https://github.com/${gitHubRepo}</url>
     <tag>${scmTag}</tag>
   </scm>
@@ -62,8 +58,8 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.277.x</artifactId>
-        <version>950.v396cb834de1e</version>
+        <artifactId>bom-${jenkins.baseline}.x</artifactId>
+        <version>7216.v6cb_72de2015d</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -73,16 +69,14 @@
   <dependencies>
     <!-- library deps -->
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.12.0</version>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
     </dependency>
 
     <!-- plugin deps -->
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>azure-credentials</artifactId>
-      <version>190.v059127ae17bb</version>
     </dependency>
 
     <dependency>
@@ -91,6 +85,11 @@
     </dependency>
 
     <!-- optional deps -->
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>github-branch-source</artifactId>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
@@ -144,6 +143,12 @@
       <artifactId>test-harness</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.junit-pioneer</groupId>
+      <artifactId>junit-pioneer</artifactId>
+      <version>2.3.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -152,12 +157,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
-          <version>3.1.2</version>
+          <version>3.6.0</version>
           <dependencies>
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
               <artifactId>checkstyle</artifactId>
-              <version>8.45.1</version>
+              <version>14.3.0</version>
             </dependency>
           </dependencies>
         </plugin>
@@ -174,7 +179,6 @@
             <configuration>
               <configLocation>checkstyle.xml</configLocation>
               <includeTestSourceDirectory>true</includeTestSourceDirectory>
-              <encoding>UTF-8</encoding>
               <consoleOutput>true</consoleOutput>
               <failsOnError>true</failsOnError>
             </configuration>

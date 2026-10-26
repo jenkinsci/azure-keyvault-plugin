@@ -9,11 +9,11 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.model.Run;
 import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.CheckForNull;
 import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.String.format;
@@ -35,6 +35,7 @@ public class AzureKeyVaultCredentialRetriever {
             CredentialsProvider.track(build, cred);
             AzureCredentials azureCredentials = (AzureCredentials) cred;
             credential = new ClientSecretCredentialBuilder()
+                    .authorityHost(azureCredentials.getAzureEnvironment().getActiveDirectoryEndpoint())
                     .clientId(azureCredentials.getClientId())
                     .clientSecret(azureCredentials.getPlainClientSecret())
                     .httpClient(HttpClientRetriever.get())

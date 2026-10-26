@@ -13,11 +13,11 @@ import hudson.security.Permission;
 import java.util.Collections;
 import java.util.List;
 import jenkins.model.Jenkins;
-import org.acegisecurity.Authentication;
 import org.jenkins.ui.icon.Icon;
 import org.jenkins.ui.icon.IconSet;
 import org.jenkins.ui.icon.IconType;
 import org.kohsuke.stapler.export.ExportedBean;
+import org.springframework.security.core.Authentication;
 
 public class AzureCredentialsStore extends CredentialsStore {
     private final AzureCredentialsProvider provider;
@@ -35,9 +35,9 @@ public class AzureCredentialsStore extends CredentialsStore {
     }
 
     @Override
-    public boolean hasPermission(@NonNull Authentication authentication, @NonNull Permission permission) {
+    public boolean hasPermission2(@NonNull Authentication authentication, @NonNull Permission permission) {
         return CredentialsProvider.VIEW.equals(permission)
-                && Jenkins.get().getACL().hasPermission(authentication, permission);
+                && Jenkins.get().getACL().hasPermission2(authentication, permission);
     }
 
     @NonNull
@@ -45,7 +45,7 @@ public class AzureCredentialsStore extends CredentialsStore {
     public List<Credentials> getCredentials(@NonNull Domain domain) {
         if (Domain.global().equals(domain)
                 && Jenkins.get().hasPermission(CredentialsProvider.VIEW)) {
-            return provider.getCredentials(Credentials.class, Jenkins.get(), ACL.SYSTEM);
+            return provider.getCredentialsInItemGroup(Credentials.class, Jenkins.get(), ACL.SYSTEM2, Collections.emptyList());
         } else {
             return Collections.emptyList();
         }

@@ -1,26 +1,23 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin.provider.global;
 
 import org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultException;
-import org.jenkinsci.plugins.azurekeyvaultplugin.provider.global.AzureCredentialsProvider;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AzureCredentialsProviderTest {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+class AzureCredentialsProviderTest {
 
     @Test
-    public void testGenerateKeyvaultItemName_wrong_pattern() throws Throwable {
-        expectedException.expect(AzureKeyVaultException.class);
-        expectedException.expectMessage("Wrong pattern for key vault item id.");
-        AzureCredentialsProvider.getSecretName("pattern");
+    void testGenerateKeyvaultItemName_wrong_pattern() {
+        Throwable exception = assertThrows(AzureKeyVaultException.class, () ->
+            AzureCredentialsProvider.getSecretName("pattern"));
+        assertTrue(exception.getMessage().contains("Wrong pattern for key vault item id."));
     }
 
     @Test
-    public void testGenerateKeyvaultItemName() throws Throwable {
+    void testGenerateKeyvaultItemName() {
         String secretItemName = AzureCredentialsProvider.getSecretName("https://myvault.vault.azure" +
                 ".net/secrets/mysecret");
         assertEquals("mysecret", secretItemName);

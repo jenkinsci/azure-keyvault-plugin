@@ -7,6 +7,7 @@ import com.cloudbees.hudson.plugins.folder.AbstractFolderProperty;
 import com.cloudbees.hudson.plugins.folder.AbstractFolderPropertyDescriptor;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.CredentialsStoreAction;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
@@ -193,13 +194,13 @@ public class FolderAzureCredentialsProvider extends CredentialsProvider {
 
                 switch (type) {
                     case "string": {
-                        AzureSecretStringCredentials cred = new AzureSecretStringCredentials(getSecretName(id), id, new KeyVaultSecretRetriever(client, id));
+                        AzureSecretStringCredentials cred = new AzureSecretStringCredentials(CredentialsScope.GLOBAL, getSecretName(id), id, new KeyVaultSecretRetriever(client, id));
                         credentials.add(cred);
                     }
                     break;
                     case "username": {
                         AzureUsernamePasswordCredentials cred = new AzureUsernamePasswordCredentials(
-                                getSecretName(id), tags.get("username"), id, new KeyVaultSecretRetriever(client, id)
+                                CredentialsScope.GLOBAL, getSecretName(id), tags.get("username"), id, new KeyVaultSecretRetriever(client, id)
                         );
                         credentials.add(cred);
                     }

@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
@@ -15,8 +16,8 @@ public class AzureSecretStringCredentials extends BaseStandardCredentials implem
 
     private final Supplier<Secret> value;
 
-    public AzureSecretStringCredentials(String id, String description, Supplier<Secret> value) {
-        super(id, description);
+    public AzureSecretStringCredentials(CredentialsScope scope, String id, String description, Supplier<Secret> value) {
+        super(scope, id, description);
         this.value = value;
     }
 

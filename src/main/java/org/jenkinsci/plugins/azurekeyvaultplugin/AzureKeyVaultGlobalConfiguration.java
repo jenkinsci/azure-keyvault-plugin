@@ -15,11 +15,16 @@ import hudson.model.Item;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.azurekeyvaultplugin.provider.global.AzureCredentialsProvider;
@@ -94,18 +99,23 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
                 .filter(credentials -> (credentials instanceof AzureCredentials || credentials instanceof AzureImdsCredentials) && ((IdCredentials) credentials).getId().equals(GENERATED_ID))
                 .findAny();
 
-        String uami = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_UAMI_ENABLED", "jenkins.azure-keyvault.uami.enabled")
-                .orElse("false");
+        boolean isUami = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_UAMI_ENABLED", "jenkins.azure-keyvault.uami.enabled")
+                .map(u -> "true".equals(u))
+                .orElse(false);
+
+        CredentialsScope scope = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_SCOPE", "jenkins.azure-keyvault.sp.scope")
+                .map(s -> "SYSTEM".equalsIgnoreCase(s) ? CredentialsScope.SYSTEM : CredentialsScope.GLOBAL)
+                .orElse(CredentialsScope.GLOBAL);
 
         AzureBaseCredentials credentials;
-        if (uami.equals("true")) {
-            if (optionalCredentials.isPresent() && optionalCredentials.get() instanceof AzureImdsCredentials) {
+        if (isUami) {
+            if (optionalCredentials.filter(c -> c instanceof AzureImdsCredentials && scope.equals(c.getScope())).isPresent()) {
                 // don't overwrite the credential if it matches what we currently have so as we don't save to disk all the time
                 return Optional.empty();
             }
 
             credentials = new AzureImdsCredentials(
-                    CredentialsScope.GLOBAL, GENERATED_ID, GENERATED_DESCRIPTION
+                    scope, GENERATED_ID, GENERATED_DESCRIPTION
             );
             storeCredential(credentials);
             return Optional.of(credentials.getId());
@@ -118,7 +128,8 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         }
 
         String clientSecret = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_CLIENT_SECRET", "jenkins.azure-keyvault.sp.client_secret")
-                .orElseThrow(IllegalArgumentException::new);
+                .orElseGet(() -> getPropertyByFile("AZURE_KEYVAULT_SP_CLIENT_SECRET_FILE", "jenkins.azure-keyvault.sp.client_secret_file")
+                        .orElseThrow(IllegalArgumentException::new));
         String subscriptionId = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_SUBSCRIPTION_ID", "jenkins.azure-keyvault.sp.subscription_id")
                 .orElseThrow(IllegalArgumentException::new);
         String tenantId = getPropertyByEnvOrSystemProperty("AZURE_KEYVAULT_SP_TENANT_ID", "jenkins.azure-keyvault.sp.tenant_id")
@@ -130,24 +141,26 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
                         clientId,
                         clientSecret,
                         subscriptionId,
-                        tenantId)
+                        tenantId,
+                        scope)
         ) {
             // don't overwrite the credential if it matches what we currently have so as we don't save to disk all the time
             return Optional.empty();
         }
 
-        AzureCredentials azureCredentials = new AzureCredentials(CredentialsScope.GLOBAL, GENERATED_ID, GENERATED_DESCRIPTION, subscriptionId, clientId, clientSecret);
+        AzureCredentials azureCredentials = new AzureCredentials(scope, GENERATED_ID, GENERATED_DESCRIPTION, subscriptionId, clientId, clientSecret);
         azureCredentials.setTenant(tenantId);
 
         storeCredential(azureCredentials);
         return Optional.of(azureCredentials.getId());
     }
 
-    private boolean azureCredentialIsEqual(AzureCredentials creds, String clientId, String clientSecret, String subscriptionId, String tenantId) {
+    private boolean azureCredentialIsEqual(AzureCredentials creds, String clientId, String clientSecret, String subscriptionId, String tenantId, CredentialsScope scope) {
         return StringUtils.equals(creds.getClientId(), clientId) &&
                 StringUtils.equals(creds.getPlainClientSecret(), clientSecret) &&
                 StringUtils.equals(creds.getSubscriptionId(), subscriptionId) &&
-                StringUtils.equals(creds.getTenant(), tenantId);
+                StringUtils.equals(creds.getTenant(), tenantId) &&
+                ObjectUtils.equals(creds.getScope(), scope);
     }
 
     private Optional<String> getPropertyByEnvOrSystemProperty(String envVariable, String systemProperty) {
@@ -159,6 +172,30 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
         String systemResult = System.getProperty(systemProperty);
         if (systemResult != null) {
             return Optional.of(systemResult);
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<String> getPropertyByFile(String envVariable, String systemProperty) {
+        String envResult = System.getenv(envVariable);
+        if (envResult != null) {
+            Path pathToSecret = Paths.get(envResult);
+            try {
+                return Optional.of(Files.readAllLines(pathToSecret).get(0));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        String systemResult = System.getProperty(systemProperty);
+        if (systemResult != null) {
+            Path pathToSecret = Paths.get(systemResult);
+            try {
+                return Optional.of(Files.readAllLines(pathToSecret).get(0));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
 
         return Optional.empty();
@@ -198,11 +235,11 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     public FormValidation doReloadCache() {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
 
-        if (keyVaultURL == null) {
+        if (StringUtils.isBlank(keyVaultURL)) {
             return FormValidation.error("Key vault url is required");
         }
 
-        if (credentialID == null) {
+        if (StringUtils.isBlank(credentialID)) {
             return FormValidation.error("Credential ID is required");
         }
 
@@ -219,11 +256,11 @@ public class AzureKeyVaultGlobalConfiguration extends GlobalConfiguration {
     ) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
 
-        if (keyVaultURL == null) {
+        if (StringUtils.isBlank(keyVaultURL)) {
             return FormValidation.error("Key vault url is required");
         }
 
-        if (credentialID == null) {
+        if (StringUtils.isBlank(credentialID)) {
             return FormValidation.error("Credential ID is required");
         }
 

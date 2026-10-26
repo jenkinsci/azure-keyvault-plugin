@@ -39,19 +39,38 @@ import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
+import java.util.Base64;
 import java.util.Enumeration;
-import javax.xml.bind.DatatypeConverter;
 import jenkins.model.Jenkins;
 
 public class AzureKeyVaultUtil {
 
     private static final char[] EMPTY_CHAR_ARRAY = new char[0];
     private static final String PKCS12 = "PKCS12";
+    private static final String PEM_CONTENT_TYPE = "application/x-pem-file";
+
+    static String saveCertificateToDisk(String contentType, FilePath workspace, String secret)
+            throws IOException, InterruptedException, GeneralSecurityException {
+        if (PEM_CONTENT_TYPE.equals(contentType)) {
+            return savePemToDisk(workspace, secret);
+        } else {
+            return convertAndWritePfxToDisk(workspace, secret);
+        }
+    }
+
+    private static String savePemToDisk(FilePath workspace, String secret) throws IOException, InterruptedException {
+        // ensure workspace has been created
+        workspace.mkdirs();
+
+        FilePath outFile = workspace.createTextTempFile("keyvault-", ".pem", secret);
+        URI uri = outFile.toURI();
+        return uri.getPath();
+    }
 
     static String convertAndWritePfxToDisk(FilePath workspace, String secret)
             throws IOException, GeneralSecurityException, InterruptedException {
         // Base64 decode the result and use a keystore to parse the key/cert
-        byte[] bytes = DatatypeConverter.parseBase64Binary(secret);
+        byte[] bytes = Base64.getDecoder().decode(secret);
         KeyStore ks = KeyStore.getInstance(PKCS12);
         ks.load(new ByteArrayInputStream(bytes), EMPTY_CHAR_ARRAY);
 
@@ -87,7 +106,7 @@ public class AzureKeyVaultUtil {
         }
 
         return new StandardListBoxModel().includeEmptyValue()
-                .includeAs(ACL.SYSTEM, context, AzureImdsCredentials.class)
-                .includeAs(ACL.SYSTEM, context, AzureCredentials.class);
+                .includeAs(ACL.SYSTEM2, context, AzureImdsCredentials.class)
+                .includeAs(ACL.SYSTEM2, context, AzureCredentials.class);
     }
 }
