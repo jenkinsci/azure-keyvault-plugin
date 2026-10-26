@@ -1,16 +1,17 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin;
 
-import com.azure.security.keyvault.secrets.SecretClient;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.google.common.annotations.VisibleForTesting;
 import com.microsoft.jenkins.keyvault.SecretClientCache;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
@@ -21,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.GlobalConfiguration;
@@ -28,6 +30,8 @@ import jenkins.model.Jenkins;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
 import org.jenkinsci.plugins.azurekeyvaultplugin.provider.KeyVaultCredentialsLoader;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.springframework.security.core.Authentication;
 
 
@@ -36,6 +40,15 @@ public class AzureCredentialsProvider extends BaseAzureKeyVaultCredentialsProvid
     private static final Logger LOG = Logger.getLogger(AzureCredentialsProvider.class.getName());
 
     private static final String CACHE_KEY = "key";
+
+    /**
+     * Reads the credentials from the vault, replaced in tests so they don't need a real Key Vault.
+     */
+    @VisibleForTesting
+    @Restricted(NoExternalUse.class)
+    @SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL", justification = "replaced in tests")
+    public static BiFunction<String, String, Map<String, IdCredentials>> vaultLoader = (credentialID, keyVaultURL) ->
+            KeyVaultCredentialsLoader.load(SecretClientCache.get(credentialID, keyVaultURL), keyVaultURL);
 
     private final AzureCredentialsStore store = new AzureCredentialsStore(this);
 
@@ -162,8 +175,7 @@ public class AzureCredentialsProvider extends BaseAzureKeyVaultCredentialsProvid
         if (keyVaultURL == null) {
             return Collections.emptyMap();
         }
-        SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
-        return KeyVaultCredentialsLoader.load(client, keyVaultURL);
+        return vaultLoader.apply(credentialID, keyVaultURL);
     }
 
     @Override

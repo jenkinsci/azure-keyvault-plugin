@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin.provider.folder;
 
-import com.azure.core.credential.TokenCredential;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.cloudbees.hudson.plugins.folder.AbstractFolder;
 import com.cloudbees.hudson.plugins.folder.AbstractFolderProperty;
@@ -15,6 +14,8 @@ import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
+import com.microsoft.azure.util.AzureBaseCredentials;
+import com.microsoft.azure.util.AzureCredentialUtil;
 import com.microsoft.azure.util.AzureCredentials;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,17 +60,21 @@ import org.springframework.security.core.Authentication;
  * defined in more than one folder the nearest folder wins, matching the folder credentials provider in
  * {@code cloudbees-folder}. Secrets tagged with the {@code SYSTEM} scope are ignored, as there is no
  * Jenkins-internal context inside a folder for them to be used in.
+ * <p>
+ * The provider is ordered before {@link org.jenkinsci.plugins.azurekeyvaultplugin.AzureCredentialsProvider}, so a
+ * folder's vault also wins over the global vault when both define the same ID.
  */
-@OptionalExtension(requirePlugins = "cloudbees-folder")
+@OptionalExtension(requirePlugins = "cloudbees-folder", ordinal = 1)
 public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentialsProvider {
     private static final Logger LOG = Logger.getLogger(FolderAzureCredentialsProvider.class.getName());
 
     /**
-     * Reads the credentials from a folder's vault, replaced in tests so they don't need a real Key Vault.
+     * Reads the credentials from a vault using the Azure credential resolved for the folder, replaced in tests so
+     * they don't need a real Key Vault.
      */
     @VisibleForTesting
-    static BiFunction<AbstractFolder<?>, VaultKey, Map<String, IdCredentials>> vaultLoader = (folder, key) ->
-            KeyVaultCredentialsLoader.load(createClient(folder, key.credentialID(), key.keyVaultURL()), key.keyVaultURL());
+    static BiFunction<AzureBaseCredentials, VaultKey, Map<String, IdCredentials>> vaultLoader = (credential, key) ->
+            KeyVaultCredentialsLoader.load(createClient(credential, key.keyVaultURL()), key.keyVaultURL());
 
     private final LoadingCache<VaultKey, Map<String, IdCredentials>> cache = newCacheBuilder(1000L)
             .build(credentialsLoader(FolderAzureCredentialsProvider::fetchCredentials));
@@ -253,20 +258,24 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
             if (folder == null) {
                 return Collections.emptyMap();
             }
-            return vaultLoader.apply(folder, key);
+            return vaultLoader.apply(resolveAzureCredential(folder, key.credentialID()), key);
         }
     }
 
     /**
-     * Connects using a credential visible from the folder, so a folder can use Azure credentials of its own
-     * rather than only ones defined globally.
+     * Looks up the credential used to connect from the folder, so a folder can use Azure credentials of its own
+     * or of a parent folder rather than only ones defined globally.
      */
-    private static SecretClient createClient(Item context, String credentialID, String keyVaultURL) {
-        TokenCredential tokenCredential = AzureCredentials.getCredentialById(context, credentialID);
-        if (tokenCredential == null) {
+    private static AzureBaseCredentials resolveAzureCredential(Item context, String credentialID) {
+        AzureBaseCredentials credential = AzureCredentialUtil.getCredential(context, credentialID);
+        if (credential == null) {
             throw new IllegalStateException("Could not find Azure credential " + credentialID + " from " + context.getFullName());
         }
-        return AzureCredentials.createKeyVaultClient(tokenCredential, keyVaultURL);
+        return credential;
+    }
+
+    private static SecretClient createClient(AzureBaseCredentials credential, String keyVaultURL) {
+        return AzureCredentials.createKeyVaultClient(AzureCredentials.getTokenCredential(credential), keyVaultURL);
     }
 
     /**
@@ -362,7 +371,7 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
                 }
 
                 try {
-                    SecretClient client = createClient(context, credentialID, url);
+                    SecretClient client = createClient(resolveAzureCredential(context, credentialID), url);
 
                     long numberOfSecrets = client.listPropertiesOfSecrets().stream().count();
                     return FormValidation.ok(String.format("Success, found %d secrets in the vault", numberOfSecrets));

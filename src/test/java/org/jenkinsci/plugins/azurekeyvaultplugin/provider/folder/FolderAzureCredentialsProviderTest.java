@@ -1,8 +1,9 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin.provider.folder;
 
-import com.cloudbees.hudson.plugins.folder.AbstractFolder;
 import com.cloudbees.hudson.plugins.folder.Folder;
+import com.cloudbees.hudson.plugins.folder.properties.FolderCredentialsProvider;
 import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
@@ -25,6 +26,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.azurekeyvaultplugin.AzureCredentialsProvider;
+import org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultGlobalConfiguration;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string.AzureSecretStringCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.usernamepassword.AzureUsernamePasswordCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.provider.folder.FolderAzureCredentialsProvider.FolderAzureKeyVaultCredentialsProperty;
@@ -57,12 +60,14 @@ class FolderAzureCredentialsProviderTest {
 
     private final Map<String, Map<String, IdCredentials>> vaults = new HashMap<>();
     private final AtomicInteger loads = new AtomicInteger();
-    private BiFunction<AbstractFolder<?>, VaultKey, Map<String, IdCredentials>> originalLoader;
+    private BiFunction<AzureBaseCredentials, VaultKey, Map<String, IdCredentials>> originalLoader;
+    private BiFunction<String, String, Map<String, IdCredentials>> originalGlobalLoader;
 
     @BeforeEach
     void setUp() {
         originalLoader = FolderAzureCredentialsProvider.vaultLoader;
-        FolderAzureCredentialsProvider.vaultLoader = (vaultFolder, key) -> {
+        originalGlobalLoader = AzureCredentialsProvider.vaultLoader;
+        FolderAzureCredentialsProvider.vaultLoader = (credential, key) -> {
             loads.incrementAndGet();
             return vaults.getOrDefault(key.keyVaultURL(), Collections.emptyMap());
         };
@@ -77,6 +82,7 @@ class FolderAzureCredentialsProviderTest {
     @AfterEach
     void tearDown() {
         FolderAzureCredentialsProvider.vaultLoader = originalLoader;
+        AzureCredentialsProvider.vaultLoader = originalGlobalLoader;
     }
 
     @Test
@@ -111,6 +117,53 @@ class FolderAzureCredentialsProviderTest {
         StandardUsernamePasswordCredentials usernamePassword = FolderAzureCredentialsProvider.get()
                 .getCredentialByIdInItem("parent-only", StandardUsernamePasswordCredentials.class, job, ACL.SYSTEM2, List.of());
         assertThat(usernamePassword.getUsername(), is("user"));
+    }
+
+    @Test
+    void folderVaultWinsOverGlobalVaultThroughCredentialsProvider(JenkinsRule j) throws Exception {
+        AzureCredentialsProvider.vaultLoader = (credentialID, keyVaultURL) ->
+                Map.of("shared", secret(CredentialsScope.GLOBAL, "shared", "from-global"));
+        AzureKeyVaultGlobalConfiguration global = AzureKeyVaultGlobalConfiguration.get();
+        global.setCredentialID(AZURE_CREDENTIAL_ID);
+        global.setKeyVaultURL("https://global.vault.azure.net/");
+        Folder folder = folderWithVault(j.jenkins, "folder", PARENT_VAULT);
+        FreeStyleProject inFolder = folder.createProject(FreeStyleProject.class, "job");
+        FreeStyleProject atRoot = j.createFreeStyleProject("job");
+
+        assertThat(resolvedThroughCredentialsProvider(inFolder, "shared"), is("from-parent"));
+        assertThat(resolvedThroughCredentialsProvider(atRoot, "shared"), is("from-global"));
+    }
+
+    @Test
+    void foldersUsingTheSameVaultDoNotShareCredentials(JenkinsRule j) throws Exception {
+        // same URL and credential ID, but each folder resolves the credential, and so the vault, for itself
+        FolderAzureCredentialsProvider.vaultLoader = (credential, key) ->
+                Map.of("shared", secret(CredentialsScope.GLOBAL, "shared", "from-" + key.folderFullName()));
+        FreeStyleProject inA = folderWithVault(j.jenkins, "a", PARENT_VAULT).createProject(FreeStyleProject.class, "job");
+        FreeStyleProject inB = folderWithVault(j.jenkins, "b", PARENT_VAULT).createProject(FreeStyleProject.class, "job");
+
+        assertThat(secretOf(inA, "shared"), is("from-a"));
+        assertThat(secretOf(inB, "shared"), is("from-b"));
+    }
+
+    @Test
+    void connectsWithTheAzureCredentialNearestTheFolder(JenkinsRule j) throws Exception {
+        // the stub vault reports which Azure credential it was connected with
+        FolderAzureCredentialsProvider.vaultLoader = (credential, key) ->
+                Map.of("identity", secret(CredentialsScope.GLOBAL, "identity", credential.getDescription()));
+        Folder parent = folderWithVault(j.jenkins, "parent", PARENT_VAULT);
+        addAzureCredential(parent, "parent");
+        Folder child = parent.createProject(Folder.class, "child");
+        child.addProperty(new FolderAzureKeyVaultCredentialsProperty(CHILD_VAULT, AZURE_CREDENTIAL_ID));
+        addAzureCredential(child, "child");
+        Folder inherits = parent.createProject(Folder.class, "inherits");
+        inherits.addProperty(new FolderAzureKeyVaultCredentialsProperty(CHILD_VAULT, AZURE_CREDENTIAL_ID));
+        Folder unrelated = folderWithVault(j.jenkins, "unrelated", PARENT_VAULT);
+
+        assertThat(secretOf(parent.createProject(FreeStyleProject.class, "job"), "identity"), is("parent"));
+        assertThat(secretOf(child.createProject(FreeStyleProject.class, "job"), "identity"), is("child"));
+        assertThat(secretOf(inherits.createProject(FreeStyleProject.class, "job"), "identity"), is("parent"));
+        assertThat(secretOf(unrelated.createProject(FreeStyleProject.class, "job"), "identity"), is("global"));
     }
 
     @Test
@@ -195,7 +248,7 @@ class FolderAzureCredentialsProviderTest {
         FreeStyleProject job = folder.createProject(FreeStyleProject.class, "job");
         assertThat(secretOf(job, "shared"), is("from-parent"));
 
-        FolderAzureCredentialsProvider.vaultLoader = (vaultFolder, key) -> {
+        FolderAzureCredentialsProvider.vaultLoader = (credential, key) -> {
             throw new IllegalStateException("vault unavailable");
         };
         FolderAzureCredentialsProvider.get().refreshCachedVaults();
@@ -205,7 +258,7 @@ class FolderAzureCredentialsProviderTest {
 
     @Test
     void failedFirstLoadProvidesNoCredentialsUntilTheNextRefresh(JenkinsRule j) throws Exception {
-        FolderAzureCredentialsProvider.vaultLoader = (vaultFolder, key) -> {
+        FolderAzureCredentialsProvider.vaultLoader = (credential, key) -> {
             loads.incrementAndGet();
             throw new IllegalStateException("vault unavailable");
         };
@@ -238,12 +291,31 @@ class FolderAzureCredentialsProviderTest {
         SystemCredentialsProvider system = SystemCredentialsProvider.getInstance();
         if (system.getCredentials().isEmpty()) {
             // only needs to exist so the credential select in the folder configuration keeps its value
-            system.getCredentials().add(new AzureImdsCredentials(CredentialsScope.GLOBAL, AZURE_CREDENTIAL_ID, ""));
+            system.getCredentials().add(new AzureImdsCredentials(CredentialsScope.GLOBAL, AZURE_CREDENTIAL_ID, "global"));
             system.save();
         }
         Folder folder = jenkins.createProject(Folder.class, name);
         folder.addProperty(new FolderAzureKeyVaultCredentialsProperty(keyVaultURL, AZURE_CREDENTIAL_ID));
         return folder;
+    }
+
+    private static void addAzureCredential(Folder folder, String description) throws Exception {
+        for (CredentialsStore store : CredentialsProvider.lookupStores(folder)) {
+            if (store.getProvider() instanceof FolderCredentialsProvider && store.getContext() == folder) {
+                store.addCredentials(Domain.global(), new AzureImdsCredentials(CredentialsScope.GLOBAL, AZURE_CREDENTIAL_ID, description));
+                return;
+            }
+        }
+        throw new AssertionError("no folder credentials store for " + folder.getFullName());
+    }
+
+    private static String resolvedThroughCredentialsProvider(Item item, String id) {
+        StringCredentials byId = CredentialsProvider.findCredentialByIdInItem(id, StringCredentials.class, item, ACL.SYSTEM2, List.of());
+        StringCredentials first = CredentialsMatchers.firstOrNull(
+                CredentialsProvider.lookupCredentialsInItem(StringCredentials.class, item, ACL.SYSTEM2, List.of()),
+                CredentialsMatchers.withId(id));
+        assertThat("lookup by id and the first listed should agree for " + id, first, is(byId));
+        return byId == null ? null : byId.getSecret().getPlainText();
     }
 
     private static CredentialsStore storeOf(Folder folder) {
