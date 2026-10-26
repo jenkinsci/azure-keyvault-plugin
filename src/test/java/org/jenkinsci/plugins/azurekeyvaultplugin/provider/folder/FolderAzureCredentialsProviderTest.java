@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin.provider.folder;
 
+import com.cloudbees.hudson.plugins.folder.AbstractFolder;
 import com.cloudbees.hudson.plugins.folder.Folder;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -22,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string.AzureSecretStringCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.usernamepassword.AzureUsernamePasswordCredentials;
@@ -56,12 +57,12 @@ class FolderAzureCredentialsProviderTest {
 
     private final Map<String, Map<String, IdCredentials>> vaults = new HashMap<>();
     private final AtomicInteger loads = new AtomicInteger();
-    private Function<VaultKey, Map<String, IdCredentials>> originalLoader;
+    private BiFunction<AbstractFolder<?>, VaultKey, Map<String, IdCredentials>> originalLoader;
 
     @BeforeEach
     void setUp() {
-        originalLoader = FolderAzureCredentialsProvider.loader;
-        FolderAzureCredentialsProvider.loader = key -> {
+        originalLoader = FolderAzureCredentialsProvider.vaultLoader;
+        FolderAzureCredentialsProvider.vaultLoader = (vaultFolder, key) -> {
             loads.incrementAndGet();
             return vaults.getOrDefault(key.keyVaultURL(), Collections.emptyMap());
         };
@@ -75,7 +76,7 @@ class FolderAzureCredentialsProviderTest {
 
     @AfterEach
     void tearDown() {
-        FolderAzureCredentialsProvider.loader = originalLoader;
+        FolderAzureCredentialsProvider.vaultLoader = originalLoader;
     }
 
     @Test
@@ -186,6 +187,35 @@ class FolderAzureCredentialsProviderTest {
 
         assertThat(secretOf(job, "shared"), is("from-parent"));
         assertThat(loads.get(), is(loadsBefore + 1));
+    }
+
+    @Test
+    void failedRefreshKeepsLastLoadedCredentials(JenkinsRule j) throws Exception {
+        Folder folder = folderWithVault(j.jenkins, "folder", PARENT_VAULT);
+        FreeStyleProject job = folder.createProject(FreeStyleProject.class, "job");
+        assertThat(secretOf(job, "shared"), is("from-parent"));
+
+        FolderAzureCredentialsProvider.vaultLoader = (vaultFolder, key) -> {
+            throw new IllegalStateException("vault unavailable");
+        };
+        FolderAzureCredentialsProvider.get().refreshCachedVaults();
+
+        assertThat(secretOf(job, "shared"), is("from-parent"));
+    }
+
+    @Test
+    void failedFirstLoadProvidesNoCredentialsUntilTheNextRefresh(JenkinsRule j) throws Exception {
+        FolderAzureCredentialsProvider.vaultLoader = (vaultFolder, key) -> {
+            loads.incrementAndGet();
+            throw new IllegalStateException("vault unavailable");
+        };
+        Folder folder = folderWithVault(j.jenkins, "folder", PARENT_VAULT);
+        FreeStyleProject job = folder.createProject(FreeStyleProject.class, "job");
+
+        assertThat(secretOf(job, "shared"), nullValue());
+        assertThat(idsVisibleTo(job), empty());
+        // lookups while the vault is down don't each try it again
+        assertThat(loads.get(), is(1));
     }
 
     @Test

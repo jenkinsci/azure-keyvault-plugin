@@ -40,7 +40,7 @@ public class AzureCredentialsProvider extends BaseAzureKeyVaultCredentialsProvid
     private final AzureCredentialsStore store = new AzureCredentialsStore(this);
 
     private final LoadingCache<String, Map<String, IdCredentials>> cache = newCacheBuilder(1L)
-            .build(key -> fetchCredentials());
+            .build(credentialsLoader(key -> fetchCredentials()));
 
     public void refreshCredentials() {
         cache.invalidateAll();
@@ -158,17 +158,12 @@ public class AzureCredentialsProvider extends BaseAzureKeyVaultCredentialsProvid
         if (StringUtils.isEmpty(credentialID)) {
             return Collections.emptyMap();
         }
-        try {
-            String keyVaultURL = KeyVaultCredentialsLoader.normalizeKeyVaultURL(azureKeyVaultGlobalConfiguration.getKeyVaultURL());
-            if (keyVaultURL == null) {
-                return Collections.emptyMap();
-            }
-            SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
-            return KeyVaultCredentialsLoader.load(client, keyVaultURL);
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
+        String keyVaultURL = KeyVaultCredentialsLoader.normalizeKeyVaultURL(azureKeyVaultGlobalConfiguration.getKeyVaultURL());
+        if (keyVaultURL == null) {
             return Collections.emptyMap();
         }
+        SecretClient client = SecretClientCache.get(credentialID, keyVaultURL);
+        return KeyVaultCredentialsLoader.load(client, keyVaultURL);
     }
 
     @Override

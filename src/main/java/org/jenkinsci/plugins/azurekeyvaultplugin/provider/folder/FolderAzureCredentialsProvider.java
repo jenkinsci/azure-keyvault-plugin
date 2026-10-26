@@ -35,7 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -65,13 +65,14 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
     private static final Logger LOG = Logger.getLogger(FolderAzureCredentialsProvider.class.getName());
 
     /**
-     * Fetches the credentials of a vault, replaced in tests so they don't need a real Key Vault.
+     * Reads the credentials from a folder's vault, replaced in tests so they don't need a real Key Vault.
      */
     @VisibleForTesting
-    static Function<VaultKey, Map<String, IdCredentials>> loader = FolderAzureCredentialsProvider::fetchCredentials;
+    static BiFunction<AbstractFolder<?>, VaultKey, Map<String, IdCredentials>> vaultLoader = (folder, key) ->
+            KeyVaultCredentialsLoader.load(createClient(folder, key.credentialID(), key.keyVaultURL()), key.keyVaultURL());
 
     private final LoadingCache<VaultKey, Map<String, IdCredentials>> cache = newCacheBuilder(1000L)
-            .build(key -> loader.apply(key));
+            .build(credentialsLoader(FolderAzureCredentialsProvider::fetchCredentials));
 
     /**
      * Identifies a vault connection. The folder is part of the key because the credential used to connect
@@ -87,6 +88,14 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
 
     public void refreshCredentials() {
         cache.invalidateAll();
+    }
+
+    /**
+     * Reloads every cached vault in the way a scheduled refresh does, keeping the current entry if the reload fails.
+     */
+    @VisibleForTesting
+    void refreshCachedVaults() {
+        cache.refreshAll(cache.asMap().keySet()).exceptionally(e -> null).join();
     }
 
     /**
@@ -234,6 +243,9 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
         }
     }
 
+    /**
+     * Failures are thrown, see {@link #credentialsLoader} for how the cache handles them.
+     */
     private static Map<String, IdCredentials> fetchCredentials(VaultKey key) {
         // refreshes run on a background thread, which can't see the folder without this
         try (ACLContext ignored = ACL.as2(ACL.SYSTEM2)) {
@@ -241,10 +253,7 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
             if (folder == null) {
                 return Collections.emptyMap();
             }
-            return KeyVaultCredentialsLoader.load(createClient(folder, key.credentialID(), key.keyVaultURL()), key.keyVaultURL());
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault for folder " + key.folderFullName() + ": " + e.getMessage(), e);
-            return Collections.emptyMap();
+            return vaultLoader.apply(folder, key);
         }
     }
 
