@@ -7,6 +7,7 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureImdsCredentials;
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string.AzureSecretStringCredentials;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.usernamepassword.AzureUsernamePasswordCredentials;
 import org.jenkinsci.plugins.azurekeyvaultplugin.provider.folder.FolderAzureCredentialsProvider.FolderAzureKeyVaultCredentialsProperty;
 import org.jenkinsci.plugins.azurekeyvaultplugin.provider.folder.FolderAzureCredentialsProvider.VaultKey;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
@@ -95,6 +97,22 @@ class FolderAzureCredentialsProviderTest {
     }
 
     @Test
+    void credentialOfAnotherTypeDoesNotHideOneInAParentFolder(JenkinsRule j) throws Exception {
+        vault(CHILD_VAULT, new AzureUsernamePasswordCredentials(
+                CredentialsScope.GLOBAL, "parent-only", "user", "", () -> Secret.fromString("password")));
+        Folder parent = folderWithVault(j.jenkins, "parent", PARENT_VAULT);
+        Folder child = parent.createProject(Folder.class, "child");
+        child.addProperty(new FolderAzureKeyVaultCredentialsProperty(CHILD_VAULT, AZURE_CREDENTIAL_ID));
+        FreeStyleProject job = child.createProject(FreeStyleProject.class, "job");
+
+        // looked up both by listing and by id, which must agree
+        assertThat(secretOf(job, "parent-only"), is("parent-value"));
+        StandardUsernamePasswordCredentials usernamePassword = FolderAzureCredentialsProvider.get()
+                .getCredentialByIdInItem("parent-only", StandardUsernamePasswordCredentials.class, job, ACL.SYSTEM2, List.of());
+        assertThat(usernamePassword.getUsername(), is("user"));
+    }
+
+    @Test
     void systemScopedSecretsAreIgnored(JenkinsRule j) throws Exception {
         Folder folder = folderWithVault(j.jenkins, "folder", PARENT_VAULT);
         FreeStyleProject job = folder.createProject(FreeStyleProject.class, "job");
@@ -142,7 +160,7 @@ class FolderAzureCredentialsProviderTest {
         j.configRoundtrip(folder);
 
         FolderAzureKeyVaultCredentialsProperty property = folder.getProperties().get(FolderAzureKeyVaultCredentialsProperty.class);
-        assertThat(property.getKeyVaultURL(), is(PARENT_VAULT));
+        assertThat(property.getUrl(), is(PARENT_VAULT));
         assertThat(property.getCredentialID(), is(AZURE_CREDENTIAL_ID));
         assertThat(property.getStore(), notNullValue());
     }

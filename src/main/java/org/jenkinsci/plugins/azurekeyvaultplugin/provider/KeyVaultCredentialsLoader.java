@@ -194,7 +194,7 @@ public final class KeyVaultCredentialsLoader {
         return null;
     }
 
-    public static String extractLabelSelector() {
+    private static String extractLabelSelector() {
         return StringUtils.isNotBlank(System.getenv("AZURE_KEYVAULT_LABEL_SELECTOR")) ? System.getenv("AZURE_KEYVAULT_LABEL_SELECTOR") : System.getProperty("jenkins.azure-keyvault.label_selector");
     }
 }

@@ -13,14 +13,12 @@ import com.cloudbees.plugins.credentials.CredentialsStoreAction;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
 import com.microsoft.azure.util.AzureCredentials;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
@@ -31,7 +29,6 @@ import hudson.security.ACLContext;
 import hudson.security.Permission;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -47,6 +44,7 @@ import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.azurekeyvaultplugin.AzureKeyVaultUtil;
 import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
 import org.jenkinsci.plugins.azurekeyvaultplugin.provider.KeyVaultCredentialsLoader;
+import org.jenkinsci.plugins.variant.OptionalExtension;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -62,7 +60,7 @@ import org.springframework.security.core.Authentication;
  * {@code cloudbees-folder}. Secrets tagged with the {@code SYSTEM} scope are ignored, as there is no
  * Jenkins-internal context inside a folder for them to be used in.
  */
-@Extension(optional = true)
+@OptionalExtension(requirePlugins = "cloudbees-folder")
 public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentialsProvider {
     private static final Logger LOG = Logger.getLogger(FolderAzureCredentialsProvider.class.getName());
 
@@ -72,10 +70,7 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
     @VisibleForTesting
     static Function<VaultKey, Map<String, IdCredentials>> loader = FolderAzureCredentialsProvider::fetchCredentials;
 
-    private final LoadingCache<VaultKey, Map<String, IdCredentials>> cache = Caffeine.newBuilder()
-            .maximumSize(1000L)
-            .expireAfterWrite(Duration.ofMinutes(120))
-            .refreshAfterWrite(Duration.ofMinutes(10))
+    private final LoadingCache<VaultKey, Map<String, IdCredentials>> cache = newCacheBuilder(1000L)
             .build(key -> loader.apply(key));
 
     /**
@@ -150,9 +145,9 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
 
         for (AbstractFolder<?> folder : foldersOf(itemGroup)) {
             IdCredentials credential = getVaultCredentials(folder).get(id);
-            if (credential != null && credential.getScope() != CredentialsScope.SYSTEM) {
-                // the nearest definition of an ID wins, even when it is of a different type
-                return type.isInstance(credential) ? type.cast(credential) : null;
+            // a definition of another type doesn't hide one further up, matching getCredentialsInItemGroup
+            if (type.isInstance(credential) && credential.getScope() != CredentialsScope.SYSTEM) {
+                return type.cast(credential);
             }
         }
         return null;
@@ -226,7 +221,7 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
         if (property == null) {
             return Collections.emptyMap();
         }
-        String keyVaultURL = KeyVaultCredentialsLoader.normalizeKeyVaultURL(property.getKeyVaultURL());
+        String keyVaultURL = KeyVaultCredentialsLoader.normalizeKeyVaultURL(property.getUrl());
         if (keyVaultURL == null || StringUtils.isBlank(property.getCredentialID())) {
             return Collections.emptyMap();
         }
@@ -268,7 +263,7 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
     /**
      * Drops cached credentials when a folder is reconfigured, moved or deleted, so a stale vault isn't used.
      */
-    @Extension(optional = true)
+    @OptionalExtension(requirePlugins = "cloudbees-folder")
     public static class FolderListener extends ItemListener {
         @Override
         public void onUpdated(Item item) {
@@ -292,13 +287,13 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
 
     public static class FolderAzureKeyVaultCredentialsProperty extends AbstractFolderProperty<AbstractFolder<?>> {
 
-        private final String keyVaultURL;
+        private final String url;
         private final String credentialID;
         private transient FolderAzureCredentialsStore store;
 
         @DataBoundConstructor
-        public FolderAzureKeyVaultCredentialsProperty(String keyVaultURL, String credentialID) {
-            this.keyVaultURL = keyVaultURL;
+        public FolderAzureKeyVaultCredentialsProperty(String url, String credentialID) {
+            this.url = url;
             this.credentialID = credentialID;
             this.store = new FolderAzureCredentialsStore();
         }
@@ -308,8 +303,8 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
             return this;
         }
 
-        public String getKeyVaultURL() {
-            return keyVaultURL;
+        public String getUrl() {
+            return url;
         }
 
         public String getCredentialID() {
@@ -320,7 +315,7 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
             return store;
         }
 
-        @Extension(optional = true)
+        @OptionalExtension(requirePlugins = "cloudbees-folder")
         @Symbol("azureKeyVault")
         public static class DescriptorImpl extends AbstractFolderPropertyDescriptor {
 
@@ -340,7 +335,7 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
             @SuppressWarnings("unused")
             public FormValidation doTestConnection(
                     @AncestorInPath Item context,
-                    @QueryParameter("keyVaultURL") final String keyVaultURL,
+                    @QueryParameter("url") final String url,
                     @QueryParameter("credentialID") final String credentialID
             ) {
                 if (context == null) {
@@ -349,7 +344,7 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
                 }
                 context.checkPermission(Item.CONFIGURE);
 
-                if (StringUtils.isBlank(keyVaultURL)) {
+                if (StringUtils.isBlank(url)) {
                     return FormValidation.error("Key vault url is required");
                 }
 
@@ -358,7 +353,7 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
                 }
 
                 try {
-                    SecretClient client = createClient(context, credentialID, keyVaultURL);
+                    SecretClient client = createClient(context, credentialID, url);
 
                     long numberOfSecrets = client.listPropertiesOfSecrets().stream().count();
                     return FormValidation.ok(String.format("Success, found %d secrets in the vault", numberOfSecrets));
@@ -457,13 +452,6 @@ public class FolderAzureCredentialsProvider extends BaseAzureKeyVaultCredentials
         @NonNull
         public CredentialsStore getStore() {
             return store;
-        }
-
-        @Override
-        public String getIconFileName() {
-            return isVisible()
-                    ? "/plugin/azure-keyvault/images/32x32/icon.png"
-                    : null;
         }
 
         @Override

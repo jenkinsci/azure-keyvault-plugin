@@ -1,6 +1,6 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
-    <f:entry title="Key Vault URL" field="keyVaultURL">
+    <f:entry title="Key Vault URL" field="url">
         <f:textbox />
     </f:entry>
     <f:entry title="Credential ID" field="credentialID">
@@ -9,7 +9,7 @@
 
     <f:validateButton
             title="${%Test Connection}" progress="${%Testing...}"
-            method="testConnection" with="keyVaultURL,credentialID" />
+            method="testConnection" with="url,credentialID" />
 
     <f:validateButton
             title="${%Reload cache}" progress="${%Reloading...}"

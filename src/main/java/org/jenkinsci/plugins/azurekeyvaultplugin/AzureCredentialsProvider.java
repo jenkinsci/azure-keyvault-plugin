@@ -6,7 +6,6 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.microsoft.jenkins.keyvault.SecretClientCache;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
@@ -17,7 +16,6 @@ import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.model.ModelObject;
 import hudson.security.ACL;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,10 +39,7 @@ public class AzureCredentialsProvider extends BaseAzureKeyVaultCredentialsProvid
 
     private final AzureCredentialsStore store = new AzureCredentialsStore(this);
 
-    private final LoadingCache<String, Map<String, IdCredentials>> cache = Caffeine.newBuilder()
-            .maximumSize(1L)
-            .expireAfterWrite(Duration.ofMinutes(120))
-            .refreshAfterWrite(Duration.ofMinutes(10))
+    private final LoadingCache<String, Map<String, IdCredentials>> cache = newCacheBuilder(1L)
             .build(key -> fetchCredentials());
 
     public void refreshCredentials() {
@@ -174,14 +169,6 @@ public class AzureCredentialsProvider extends BaseAzureKeyVaultCredentialsProvid
             LOG.log(Level.WARNING, "Error retrieving secrets from Azure KeyVault: " + e.getMessage(), e);
             return Collections.emptyMap();
         }
-    }
-
-    /**
-     * @deprecated use {@link KeyVaultCredentialsLoader#extractLabelSelector()}
-     */
-    @Deprecated
-    public static String extractLabelSelector() {
-        return KeyVaultCredentialsLoader.extractLabelSelector();
     }
 
     @Override

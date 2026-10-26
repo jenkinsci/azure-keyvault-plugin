@@ -585,7 +585,7 @@ With Job DSL:
 folder('team-a') {
     properties {
         azureKeyVault {
-            keyVaultURL('https://team-a.vault.azure.net/')
+            url('https://team-a.vault.azure.net/')
             credentialID('team-a-service-principal')
         }
     }
