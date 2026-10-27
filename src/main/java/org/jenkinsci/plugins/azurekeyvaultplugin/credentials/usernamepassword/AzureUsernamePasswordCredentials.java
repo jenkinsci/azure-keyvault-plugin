@@ -10,7 +10,7 @@ import hudson.Extension;
 import hudson.Util;
 import hudson.util.Secret;
 import java.util.function.Supplier;
-import org.jenkinsci.plugins.azurekeyvaultplugin.AzureCredentialsProvider;
+import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
 import org.jvnet.localizer.ResourceBundleHolder;
 
 
@@ -64,7 +64,7 @@ public class AzureUsernamePasswordCredentials extends BaseStandardCredentials im
 
         @Override
         public boolean isApplicable(CredentialsProvider provider) {
-            return provider instanceof AzureCredentialsProvider;
+            return BaseAzureKeyVaultCredentialsProvider.isAzureKeyVaultProvider(provider);
         }
     }
 }

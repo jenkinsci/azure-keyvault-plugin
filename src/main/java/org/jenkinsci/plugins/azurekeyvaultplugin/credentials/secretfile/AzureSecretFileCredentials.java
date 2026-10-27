@@ -9,7 +9,7 @@ import hudson.util.Secret;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.function.Supplier;
-import org.jenkinsci.plugins.azurekeyvaultplugin.AzureCredentialsProvider;
+import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
 import org.jenkinsci.plugins.plaincredentials.FileCredentials;
 import org.jenkinsci.plugins.plaincredentials.impl.Messages;
 import org.jvnet.localizer.ResourceBundleHolder;
@@ -62,7 +62,7 @@ public class AzureSecretFileCredentials extends BaseStandardCredentials implemen
 
         @Override
         public boolean isApplicable(CredentialsProvider provider) {
-            return provider instanceof AzureCredentialsProvider;
+            return BaseAzureKeyVaultCredentialsProvider.isAzureKeyVaultProvider(provider);
         }
     }
 }

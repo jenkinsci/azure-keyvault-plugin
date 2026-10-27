@@ -566,6 +566,32 @@ az keyvault secret set --vault-name my-vault \
   --tags jenkinsID=myCred description="This is my credential" scope=system
 ```
 
+#### Folder scoped credentials
+
+A Key Vault can also be configured on a folder (including multibranch projects and organization folders), which requires the [Folders plugin](https://plugins.jenkins.io/cloudbees-folder).
+The secrets in that vault are then available only to items inside the folder and its sub-folders, allowing teams to use their own vault without it being visible to the whole Jenkins instance.
+
+On the folder's configuration page, add the *Azure Key Vault* property and set the Key Vault URL and the credential used to connect to it.
+The credential is looked up from the folder, so it can be an Azure Service Principal or Managed Identity stored in the folder itself, in a parent folder or globally.
+
+Secrets are mapped to credentials in exactly the same way as for the global vault, using the tags described above. When the same credential ID is available from more than one folder, the one in the nearest folder is used.
+Secrets with `scope=system` are ignored in folders, as system credentials are only usable by Jenkins itself.
+
+The credentials of a folder vault are cached in the same way as the global vault. Use *Reload cache* on the folder configuration page, or save the folder configuration, to pick up new secrets immediately.
+
+With Job DSL:
+
+```groovy
+folder('team-a') {
+    properties {
+        azureKeyVault {
+            url('https://team-a.vault.azure.net/')
+            credentialID('team-a-service-principal')
+        }
+    }
+}
+```
+
 ### SecretSource
 
 The plugin allows the [Configuration as Code plugin](https://plugins.jenkins.io/configuration-as-code) to interpolate string secrets from Azure KeyVault.
