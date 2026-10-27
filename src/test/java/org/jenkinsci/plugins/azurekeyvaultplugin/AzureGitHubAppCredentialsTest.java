@@ -6,7 +6,9 @@ import hudson.util.Secret;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.githubapp.GitHubAppCredentialsFactory;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.AzureKeyVaultCredentialsAdapter;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.AzureKeyVaultSecretContext;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.githubapp.GitHubAppCredentialsAdapter;
 import org.jenkinsci.plugins.github_branch_source.GitHubAppCredentials;
 import org.jenkinsci.plugins.github_branch_source.app_credentials.AccessSpecifiedRepositories;
 import org.junit.jupiter.api.Test;
@@ -37,14 +39,24 @@ class AzureGitHubAppCredentialsTest {
         return tags;
     }
 
+    private static IdCredentials adapt(String id, String description, Map<String, String> tags) {
+        return new GitHubAppCredentialsAdapter().adapt(new AzureKeyVaultSecretContext(
+                CredentialsScope.GLOBAL, id, description, id, tags, key(), name -> {
+                    throw new AssertionError("unexpected lookup of " + name);
+                }));
+    }
+
+    @Test
+    void adapterIsRegisteredWhenPluginPresent(JenkinsRule j) {
+        assertThat(AzureKeyVaultCredentialsAdapter.forType("githubApp"), instanceOf(GitHubAppCredentialsAdapter.class));
+    }
+
     @Test
     void mapsAllTagsToNativeGitHubAppCredentials(JenkinsRule j) {
-        IdCredentials result = GitHubAppCredentialsFactory.create(
-                CredentialsScope.GLOBAL,
+        IdCredentials result = adapt(
                 "my-app",
                 "desc",
-                tags("type", "githubApp", "appID", "123456", "owner", "my-org", "apiUri", "https://ghe.example.com/api/v3"),
-                key());
+                tags("type", "githubApp", "appID", "123456", "owner", "my-org", "apiUri", "https://ghe.example.com/api/v3"));
 
         // Native type so github-branch-source's `instanceof GitHubAppCredentials` dispatch accepts it.
         assertThat(result, instanceOf(GitHubAppCredentials.class));
@@ -62,8 +74,7 @@ class AzureGitHubAppCredentialsTest {
 
     @Test
     void ownerAndApiUriAreOptional(JenkinsRule j) {
-        IdCredentials result = GitHubAppCredentialsFactory.create(
-                CredentialsScope.GLOBAL, "app2", "", tags("type", "githubApp", "appID", "999"), key());
+        IdCredentials result = adapt("app2", "", tags("type", "githubApp", "appID", "999"));
 
         assertThat(result, instanceOf(GitHubAppCredentials.class));
         GitHubAppCredentials cred = (GitHubAppCredentials) result;
@@ -75,8 +86,19 @@ class AzureGitHubAppCredentialsTest {
     }
 
     @Test
+    void clientIdIsUsedAsAppId(JenkinsRule j) {
+        GitHubAppCredentials cred = (GitHubAppCredentials) adapt("app4", "", tags("type", "githubApp", "clientID", "Iv23liExample"));
+        assertThat(cred.getAppID(), is("Iv23liExample"));
+    }
+
+    @Test
+    void clientIdTakesPrecedenceOverAppId(JenkinsRule j) {
+        GitHubAppCredentials cred = (GitHubAppCredentials) adapt("app5", "", tags("type", "githubApp", "clientID", "Iv23liExample", "appID", "123456"));
+        assertThat(cred.getAppID(), is("Iv23liExample"));
+    }
+
+    @Test
     void missingAppIdTagIsSkipped(JenkinsRule j) {
-        assertNull(GitHubAppCredentialsFactory.create(
-                CredentialsScope.GLOBAL, "app3", "", tags("type", "githubApp"), key()));
+        assertNull(adapt("app3", "", tags("type", "githubApp")));
     }
 }

@@ -1,13 +1,12 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin.credentials.string;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.util.Secret;
 import java.util.function.Supplier;
-import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.AzureKeyVaultCredentialsDescriptor;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.plaincredentials.impl.Messages;
 import org.jvnet.localizer.ResourceBundleHolder;
@@ -29,16 +28,11 @@ public class AzureSecretStringCredentials extends BaseStandardCredentials implem
 
     @Extension
     @SuppressWarnings("unused")
-    public static class DescriptorImpl extends BaseStandardCredentialsDescriptor {
+    public static class DescriptorImpl extends AzureKeyVaultCredentialsDescriptor {
         @Override
         @NonNull
         public String getDisplayName() {
             return ResourceBundleHolder.get(Messages.class).format("StringCredentialsImpl.secret_text");
-        }
-
-        @Override
-        public boolean isApplicable(CredentialsProvider provider) {
-            return BaseAzureKeyVaultCredentialsProvider.isAzureKeyVaultProvider(provider);
         }
     }
 }

@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin.credentials.certificate;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCertificateCredentials;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
@@ -17,7 +16,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.AzureKeyVaultCredentialsDescriptor;
 import org.jvnet.localizer.ResourceBundleHolder;
 
 public class AzureCertificateCredentials extends BaseStandardCredentials implements StandardCertificateCredentials {
@@ -106,7 +105,7 @@ public class AzureCertificateCredentials extends BaseStandardCredentials impleme
 
     @Extension
     @SuppressWarnings("unused")
-    public static class DescriptorImpl extends BaseStandardCredentialsDescriptor {
+    public static class DescriptorImpl extends AzureKeyVaultCredentialsDescriptor {
         @Override
         @NonNull
         public String getDisplayName() {
@@ -116,11 +115,6 @@ public class AzureCertificateCredentials extends BaseStandardCredentials impleme
         @Override
         public String getIconClassName() {
             return "icon-application-certificate";
-        }
-
-        @Override
-        public boolean isApplicable(CredentialsProvider provider) {
-            return BaseAzureKeyVaultCredentialsProvider.isAzureKeyVaultProvider(provider);
         }
     }
 }

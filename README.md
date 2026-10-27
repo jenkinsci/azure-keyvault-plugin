@@ -269,7 +269,7 @@ To use a different type add a tag called `type` with one of the below values:
 - `certificate` - a certificate as secret
   - (optional) add tag `password-id` that points to the secret name in the vault that has the password of the certificate.
 - `githubApp` - a GitHub App credential (requires the `github-branch-source` plugin to be installed)
-  - add a tag `appID` for the GitHub App ID (**required**)
+  - add a tag `clientID` for the GitHub App client ID (**required**)
   - (optional) add a tag `owner` for the organisation/user the app is scoped to (leave unset if the app is installed on a single organisation)
   - (optional) add a tag `apiUri` for the GitHub API endpoint (GitHub Enterprise only)
 
@@ -491,11 +491,11 @@ openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt \
   -out github-app-key.pkcs8.pem
 ```
 
-Store the converted key, tagging it with the App ID (and, optionally, the owner / API endpoint):
+Store the converted key, tagging it with the client ID (and, optionally, the owner / API endpoint):
 
 ```bash
 az keyvault secret set \
-  --tags type=githubApp appID=123456 owner=my-org \
+  --tags type=githubApp clientID=Iv23liExample owner=my-org \
   --vault-name my-vault \
   --name my-github-app \
   --file github-app-key.pkcs8.pem
@@ -591,6 +591,36 @@ folder('team-a') {
     }
 }
 ```
+
+#### Adding credential types from other plugins
+
+Each `type` tag value is handled by an `AzureKeyVaultCredentialsAdapter` extension, so other plugins can add their own credential types without changing this plugin:
+
+```java
+@Extension
+public class MyCredentialsAdapter extends AzureKeyVaultCredentialsAdapter {
+    @NonNull
+    @Override
+    public String getType() {
+        return "myType";
+    }
+
+    @Override
+    public IdCredentials adapt(@NonNull AzureKeyVaultSecretContext context) {
+        return new MyAzureCredentials(
+                context.getScope(), context.getId(), context.getDescription(),
+                context.getTag("someTag"), context.getSecret());
+    }
+}
+```
+
+If the plugin providing the credential type is an optional dependency, register the adapter with `@OptionalExtension(requirePlugins = "...")` from the [variant plugin](https://plugins.jenkins.io/variant/) instead.
+
+`context.getSecret()` returns a supplier that reads the secret from the vault on every `get()`; `context.getSecret(name)` does the same for another secret in the same vault (for example a passphrase). A credential class backed by it should:
+
+- Keep the supplier rather than its value, so the secret is only read from the vault when the credential is used.
+- Have a `CredentialsSnapshotTaker` that captures the value, so the credential can be sent to agents. See the `*SnapshotTaker` classes in this plugin.
+- Use a descriptor extending `AzureKeyVaultCredentialsDescriptor`, which makes the type available only to the Azure Key Vault credentials providers.
 
 ### SecretSource
 

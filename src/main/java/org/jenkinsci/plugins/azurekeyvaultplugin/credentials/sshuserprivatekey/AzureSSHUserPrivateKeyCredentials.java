@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.azurekeyvaultplugin.credentials.sshuserprivatekey;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.Messages;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -14,7 +13,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
-import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.AzureKeyVaultCredentialsDescriptor;
 import org.jvnet.localizer.ResourceBundleHolder;
 
 public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials implements SSHUserPrivateKey {
@@ -85,7 +84,7 @@ public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials i
 
     @Extension
     @SuppressWarnings("unused")
-    public static class DescriptorImpl extends BaseStandardCredentialsDescriptor {
+    public static class DescriptorImpl extends AzureKeyVaultCredentialsDescriptor {
         @Override
         @NonNull
         public String getDisplayName() {
@@ -95,11 +94,6 @@ public class AzureSSHUserPrivateKeyCredentials extends BaseStandardCredentials i
         @Override
         public String getIconClassName() {
             return "symbol-fingerprint";
-        }
-
-        @Override
-        public boolean isApplicable(CredentialsProvider provider) {
-            return BaseAzureKeyVaultCredentialsProvider.isAzureKeyVaultProvider(provider);
         }
     }
 }

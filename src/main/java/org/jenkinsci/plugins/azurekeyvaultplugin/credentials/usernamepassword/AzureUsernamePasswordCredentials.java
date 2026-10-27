@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.azurekeyvaultplugin.credentials.usernamepassword;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
@@ -10,7 +9,7 @@ import hudson.Extension;
 import hudson.Util;
 import hudson.util.Secret;
 import java.util.function.Supplier;
-import org.jenkinsci.plugins.azurekeyvaultplugin.provider.BaseAzureKeyVaultCredentialsProvider;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.AzureKeyVaultCredentialsDescriptor;
 import org.jvnet.localizer.ResourceBundleHolder;
 
 
@@ -43,7 +42,7 @@ public class AzureUsernamePasswordCredentials extends BaseStandardCredentials im
     }
 
     @Extension(ordinal = 1)
-    public static class DescriptorImpl extends BaseStandardCredentialsDescriptor {
+    public static class DescriptorImpl extends AzureKeyVaultCredentialsDescriptor {
 
         /**
          * {@inheritDoc}
@@ -60,11 +59,6 @@ public class AzureUsernamePasswordCredentials extends BaseStandardCredentials im
         @Override
         public String getIconClassName() {
             return "symbol-id-card";
-        }
-
-        @Override
-        public boolean isApplicable(CredentialsProvider provider) {
-            return BaseAzureKeyVaultCredentialsProvider.isAzureKeyVaultProvider(provider);
         }
     }
 }
