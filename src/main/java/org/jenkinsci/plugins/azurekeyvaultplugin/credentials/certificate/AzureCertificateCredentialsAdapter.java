@@ -21,10 +21,7 @@ public class AzureCertificateCredentialsAdapter extends AzureKeyVaultCredentials
     @Override
     public IdCredentials adapt(@NonNull AzureKeyVaultSecretContext context) {
         String passwordId = context.getTag("password-id");
-        Supplier<Secret> password = () -> Secret.fromString("");
-        if (StringUtils.isNotBlank(passwordId)) {
-            password = context.getSecret(passwordId);
-        }
+        Supplier<Secret> password = StringUtils.isNotBlank(passwordId) ? context.getSecret(passwordId) : () -> Secret.fromString("");
         return new AzureCertificateCredentials(context.getScope(), context.getId(), context.getDescription(), password, context.getSecret());
     }
 }

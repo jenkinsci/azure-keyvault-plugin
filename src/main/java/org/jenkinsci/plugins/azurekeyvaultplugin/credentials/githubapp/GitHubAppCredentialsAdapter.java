@@ -15,8 +15,9 @@ import org.jenkinsci.plugins.variant.OptionalExtension;
 /**
  * Builds {@link GitHubAppCredentials} from an Azure Key Vault secret's tags.
  *
- * <p>Only registered when the optional {@code github-branch-source} plugin is installed. All references to
- * that plugin are isolated in this class, so other classes must not reference {@link GitHubAppCredentials}.
+ * <p>Only registered when the optional {@code github-branch-source} plugin is installed. This must stay the only
+ * class referencing that plugin: an always-loaded class doing so would fail with {@code NoClassDefFoundError}
+ * when it is absent and take the whole provider down with it.
  */
 @OptionalExtension(requirePlugins = "github-branch-source")
 @SuppressWarnings("unused")

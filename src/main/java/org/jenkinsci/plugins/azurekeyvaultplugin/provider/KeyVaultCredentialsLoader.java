@@ -93,8 +93,9 @@ public final class KeyVaultCredentialsLoader {
                 }
             }
 
+            String secretName = getSecretName(id);
             String type = tags.getOrDefault("type", DEFAULT_TYPE);
-            String jenkinsID = tags.getOrDefault("jenkinsID", getSecretName(id));
+            String jenkinsID = tags.getOrDefault("jenkinsID", secretName);
             String description = tags.getOrDefault("description", "");
             String labelScope = tags.getOrDefault("scope", DEFAULT_SCOPE).toUpperCase();
 
@@ -115,9 +116,9 @@ public final class KeyVaultCredentialsLoader {
                 return null;
             }
             AzureKeyVaultSecretContext context = new AzureKeyVaultSecretContext(
-                    scope, jenkinsID, description, getSecretName(id), tags,
+                    scope, jenkinsID, description, secretName, tags,
                     new KeyVaultSecretRetriever(client, id),
-                    secretName -> new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + secretName)
+                    name -> new KeyVaultSecretRetriever(client, keyVaultURL + "secrets/" + name)
             );
             return adapter.adapt(context);
         }

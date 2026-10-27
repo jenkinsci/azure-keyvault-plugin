@@ -31,17 +31,13 @@ public abstract class AzureKeyVaultCredentialsAdapter implements ExtensionPoint 
     @CheckForNull
     public abstract IdCredentials adapt(@NonNull AzureKeyVaultSecretContext context) throws Exception;
 
-    public static ExtensionList<AzureKeyVaultCredentialsAdapter> all() {
-        return ExtensionList.lookup(AzureKeyVaultCredentialsAdapter.class);
-    }
-
     /**
      * @return the highest-ordinal adapter handling the given type, or {@code null} if there is none
      */
     @CheckForNull
     public static AzureKeyVaultCredentialsAdapter forType(@NonNull String type) {
-        for (AzureKeyVaultCredentialsAdapter adapter : all()) {
-            if (adapter.getType().equals(type)) {
+        for (AzureKeyVaultCredentialsAdapter adapter : ExtensionList.lookup(AzureKeyVaultCredentialsAdapter.class)) {
+            if (type.equals(adapter.getType())) {
                 return adapter;
             }
         }

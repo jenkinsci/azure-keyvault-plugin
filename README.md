@@ -602,7 +602,7 @@ public class MyCredentialsAdapter extends AzureKeyVaultCredentialsAdapter {
     @NonNull
     @Override
     public String getType() {
-        return "myType"; // matched against the secret's `type` tag
+        return "myType";
     }
 
     @Override
@@ -616,11 +616,11 @@ public class MyCredentialsAdapter extends AzureKeyVaultCredentialsAdapter {
 
 If the plugin providing the credential type is an optional dependency, register the adapter with `@OptionalExtension(requirePlugins = "...")` from the [variant plugin](https://plugins.jenkins.io/variant/) instead.
 
-`context.getSecret()` reads the secret value from the vault each time it is called, and `context.getSecret(name)` does the same for another secret in the same vault (for example a passphrase). When implementing a credential class for this:
+`context.getSecret()` returns a supplier that reads the secret from the vault on every `get()`; `context.getSecret(name)` does the same for another secret in the same vault (for example a passphrase). A credential class backed by it should:
 
-- Resolve the secret lazily, keeping the supplier rather than its value, so that secrets are only read from the vault when used.
-- Provide a `CredentialsSnapshotTaker` that captures the value, so the credential can be sent to agents. See the `*SnapshotTaker` classes in this plugin.
-- Extend `AzureKeyVaultCredentialsDescriptor` for its descriptor, which makes the type available only to the Azure Key Vault credentials providers.
+- Keep the supplier rather than its value, so the secret is only read from the vault when the credential is used.
+- Have a `CredentialsSnapshotTaker` that captures the value, so the credential can be sent to agents. See the `*SnapshotTaker` classes in this plugin.
+- Use a descriptor extending `AzureKeyVaultCredentialsDescriptor`, which makes the type available only to the Azure Key Vault credentials providers.
 
 ### SecretSource
 

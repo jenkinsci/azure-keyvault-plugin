@@ -6,6 +6,7 @@ import hudson.util.Secret;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.AzureKeyVaultCredentialsAdapter;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.AzureKeyVaultSecretContext;
 import org.jenkinsci.plugins.azurekeyvaultplugin.credentials.githubapp.GitHubAppCredentialsAdapter;
 import org.jenkinsci.plugins.github_branch_source.GitHubAppCredentials;
@@ -43,6 +44,11 @@ class AzureGitHubAppCredentialsTest {
                 CredentialsScope.GLOBAL, id, description, id, tags, key(), name -> {
                     throw new AssertionError("unexpected lookup of " + name);
                 }));
+    }
+
+    @Test
+    void adapterIsRegisteredWhenPluginPresent(JenkinsRule j) {
+        assertThat(AzureKeyVaultCredentialsAdapter.forType("githubApp"), instanceOf(GitHubAppCredentialsAdapter.class));
     }
 
     @Test

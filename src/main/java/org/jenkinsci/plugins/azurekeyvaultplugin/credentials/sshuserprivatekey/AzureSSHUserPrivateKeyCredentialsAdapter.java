@@ -23,13 +23,9 @@ public class AzureSSHUserPrivateKeyCredentialsAdapter extends AzureKeyVaultCrede
 
     @Override
     public IdCredentials adapt(@NonNull AzureKeyVaultSecretContext context) {
-        String usernameSecretTag = context.getTag("username-is-secret");
+        boolean usernameSecret = Boolean.parseBoolean(context.getTag("username-is-secret"));
         String passphraseID = context.getTag("passphrase-id");
         Secret passphrase = null;
-        boolean usernameSecret = false;
-        if (StringUtils.isNotBlank(usernameSecretTag)) {
-            usernameSecret = Boolean.parseBoolean(usernameSecretTag);
-        }
         if (StringUtils.isNotBlank(passphraseID)) {
             try {
                 passphrase = context.getSecret(passphraseID).get();

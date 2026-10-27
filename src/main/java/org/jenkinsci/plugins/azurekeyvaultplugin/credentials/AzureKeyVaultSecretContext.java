@@ -4,8 +4,6 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.util.Secret;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -25,10 +23,6 @@ public final class AzureKeyVaultSecretContext {
     private final Supplier<Secret> secret;
     private final Function<String, Supplier<Secret>> secretLookup;
 
-    /**
-     * @param secret       lazily retrieves the value of this secret
-     * @param secretLookup returns a supplier that lazily retrieves another secret in the same vault, by name
-     */
     public AzureKeyVaultSecretContext(
             @NonNull CredentialsScope scope,
             @NonNull String id,
@@ -42,7 +36,7 @@ public final class AzureKeyVaultSecretContext {
         this.id = id;
         this.description = description;
         this.secretName = secretName;
-        this.tags = Collections.unmodifiableMap(new HashMap<>(tags));
+        this.tags = tags;
         this.secret = secret;
         this.secretLookup = secretLookup;
     }
@@ -73,18 +67,13 @@ public final class AzureKeyVaultSecretContext {
         return secretName;
     }
 
-    @NonNull
-    public Map<String, String> getTags() {
-        return tags;
-    }
-
     @CheckForNull
     public String getTag(@NonNull String name) {
         return tags.get(name);
     }
 
     /**
-     * @return a supplier that retrieves this secret's value from the vault each time it is called
+     * @return a supplier that reads this secret's value from the vault on every {@link Supplier#get()}
      */
     @NonNull
     public Supplier<Secret> getSecret() {
@@ -93,7 +82,7 @@ public final class AzureKeyVaultSecretContext {
 
     /**
      * @param secretName the name of another secret in the same vault, e.g. from a {@code passphrase-id} tag
-     * @return a supplier that retrieves that secret's value from the vault each time it is called
+     * @return a supplier that reads that secret's value from the vault on every {@link Supplier#get()}
      */
     @NonNull
     public Supplier<Secret> getSecret(@NonNull String secretName) {
