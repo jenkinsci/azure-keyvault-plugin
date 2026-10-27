@@ -592,6 +592,36 @@ folder('team-a') {
 }
 ```
 
+#### Adding credential types from other plugins
+
+Each `type` tag value is handled by an `AzureKeyVaultCredentialsAdapter` extension, so other plugins can add their own credential types without changing this plugin:
+
+```java
+@Extension
+public class MyCredentialsAdapter extends AzureKeyVaultCredentialsAdapter {
+    @NonNull
+    @Override
+    public String getType() {
+        return "myType"; // matched against the secret's `type` tag
+    }
+
+    @Override
+    public IdCredentials adapt(@NonNull AzureKeyVaultSecretContext context) {
+        return new MyAzureCredentials(
+                context.getScope(), context.getId(), context.getDescription(),
+                context.getTag("someTag"), context.getSecret());
+    }
+}
+```
+
+If the plugin providing the credential type is an optional dependency, register the adapter with `@OptionalExtension(requirePlugins = "...")` from the [variant plugin](https://plugins.jenkins.io/variant/) instead.
+
+`context.getSecret()` reads the secret value from the vault each time it is called, and `context.getSecret(name)` does the same for another secret in the same vault (for example a passphrase). When implementing a credential class for this:
+
+- Resolve the secret lazily, keeping the supplier rather than its value, so that secrets are only read from the vault when used.
+- Provide a `CredentialsSnapshotTaker` that captures the value, so the credential can be sent to agents. See the `*SnapshotTaker` classes in this plugin.
+- Extend `AzureKeyVaultCredentialsDescriptor` for its descriptor, which makes the type available only to the Azure Key Vault credentials providers.
+
 ### SecretSource
 
 The plugin allows the [Configuration as Code plugin](https://plugins.jenkins.io/configuration-as-code) to interpolate string secrets from Azure KeyVault.
