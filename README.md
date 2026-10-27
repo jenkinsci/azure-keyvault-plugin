@@ -269,7 +269,7 @@ To use a different type add a tag called `type` with one of the below values:
 - `certificate` - a certificate as secret
   - (optional) add tag `password-id` that points to the secret name in the vault that has the password of the certificate.
 - `githubApp` - a GitHub App credential (requires the `github-branch-source` plugin to be installed)
-  - add a tag `appID` for the GitHub App ID (**required**)
+  - add a tag `clientID` for the GitHub App client ID (**required**)
   - (optional) add a tag `owner` for the organisation/user the app is scoped to (leave unset if the app is installed on a single organisation)
   - (optional) add a tag `apiUri` for the GitHub API endpoint (GitHub Enterprise only)
 
@@ -491,11 +491,11 @@ openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt \
   -out github-app-key.pkcs8.pem
 ```
 
-Store the converted key, tagging it with the App ID (and, optionally, the owner / API endpoint):
+Store the converted key, tagging it with the client ID (and, optionally, the owner / API endpoint):
 
 ```bash
 az keyvault secret set \
-  --tags type=githubApp appID=123456 owner=my-org \
+  --tags type=githubApp clientID=Iv23liExample owner=my-org \
   --vault-name my-vault \
   --name my-github-app \
   --file github-app-key.pkcs8.pem

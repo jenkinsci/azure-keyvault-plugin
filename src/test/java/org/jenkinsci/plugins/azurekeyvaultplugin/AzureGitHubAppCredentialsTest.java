@@ -86,6 +86,18 @@ class AzureGitHubAppCredentialsTest {
     }
 
     @Test
+    void clientIdIsUsedAsAppId(JenkinsRule j) {
+        GitHubAppCredentials cred = (GitHubAppCredentials) adapt("app4", "", tags("type", "githubApp", "clientID", "Iv23liExample"));
+        assertThat(cred.getAppID(), is("Iv23liExample"));
+    }
+
+    @Test
+    void clientIdTakesPrecedenceOverAppId(JenkinsRule j) {
+        GitHubAppCredentials cred = (GitHubAppCredentials) adapt("app5", "", tags("type", "githubApp", "clientID", "Iv23liExample", "appID", "123456"));
+        assertThat(cred.getAppID(), is("Iv23liExample"));
+    }
+
+    @Test
     void missingAppIdTagIsSkipped(JenkinsRule j) {
         assertNull(adapt("app3", "", tags("type", "githubApp")));
     }

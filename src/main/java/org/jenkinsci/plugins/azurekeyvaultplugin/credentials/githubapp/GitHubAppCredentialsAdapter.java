@@ -35,13 +35,14 @@ public class GitHubAppCredentialsAdapter extends AzureKeyVaultCredentialsAdapter
      * The private key (PKCS#8 PEM) is resolved eagerly because {@link GitHubAppCredentials} reads its key
      * field directly during token generation and cannot resolve it lazily.
      *
-     * @return the credential, or {@code null} if the required {@code appID} tag is blank.
+     * @return the credential, or {@code null} if both the {@code clientID} and {@code appID} tags are blank.
      */
     @Override
     public IdCredentials adapt(@NonNull AzureKeyVaultSecretContext context) {
-        String appId = context.getTag("appID");
+        // GitHub accepts either the client ID (recommended) or the app ID as the JWT issuer
+        String appId = StringUtils.defaultIfBlank(context.getTag("clientID"), context.getTag("appID"));
         if (StringUtils.isBlank(appId)) {
-            LOG.log(Level.WARNING, "Skipping GitHub App credential {0}: missing required 'appID' tag", context.getId());
+            LOG.log(Level.WARNING, "Skipping GitHub App credential {0}: missing required 'clientID' tag", context.getId());
             return null;
         }
         GitHubAppCredentials cred = new GitHubAppCredentials(
